@@ -1,0 +1,46 @@
+# Local infrastructure for NOWCORE (docs/07-setup.md).
+#
+# Postgres stands in for Supabase's database during Phase 1: Prisma owns the
+# schema either way (ADR-003), so the migrations written against this run
+# unchanged against the hosted project. Supabase Auth and Storage arrive with
+# the tasks that need them (T-063, T-035).
+#
+# Ports are offset from the defaults so this can run beside other projects'
+# stacks on the same machine — 5433 and 6381, not 5432 and 6379 (classroom-metaverse holds 5432 and 6380).
+name: nowcore
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nowcore
+      POSTGRES_PASSWORD: nowcore
+      POSTGRES_DB: nowcore
+    ports:
+      - '${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nowcore -d nowcore']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    # AOF on: a queued POD submission is an order, and losing it on a restart
+    # is losing the order (docs/04-hld.md §6).
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_PORT:-6381}:6379'
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres:
+  redis:

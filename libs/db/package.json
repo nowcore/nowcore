@@ -1,0 +1,76 @@
+{
+  "name": "@nowcore/db",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "name": "db",
+    "tags": [
+      "scope:server",
+      "type:lib"
+    ],
+    "targets": {
+      "prisma-generate": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "prisma generate",
+          "cwd": "{projectRoot}"
+        },
+        "cache": true,
+        "inputs": [
+          "{projectRoot}/prisma/schema.prisma",
+          "{projectRoot}/prisma.config.ts"
+        ]
+      },
+      "build": {
+        "dependsOn": [
+          "prisma-generate",
+          "^build"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "prisma-generate",
+          "^build"
+        ]
+      },
+      "migrate": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "prisma migrate dev",
+          "cwd": "{projectRoot}"
+        }
+      },
+      "seed": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node prisma/seed.ts",
+          "cwd": "{projectRoot}"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "@prisma/client": "7.10.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "prisma": "7.10.0",
+    "@nowcore/shared": "workspace:*"
+  }
+}

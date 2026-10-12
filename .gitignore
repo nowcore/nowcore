@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.next/
+.next-*/
+out/
+coverage/
+.nx/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.DS_Store
+
+.env
+.env.*
+!.env.example
+
+# personal Claude Code settings; .claude/settings.json is shared and checked in
+.claude/settings.local.json
+out-tsc/
+test-output/

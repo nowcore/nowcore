@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./libs/shared"
+    },
+    {
+      "path": "./libs/ui"
+    },
+    {
+      "path": "./libs/db"
+    },
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./apps/worker"
+    },
+    {
+      "path": "./apps/admin"
+    },
+    {
+      "path": "./apps/web"
+    }
+  ],
+  "compilerOptions": {}
+}

@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to a PR makes the in-flight run pointless.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Real services, not mocks. The API test proves boot refuses an unreachable
+    # database, and the worker test proves a queued job is actually consumed —
+    # both are failures a mock would hide.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nowcore
+          POSTGRES_PASSWORD: nowcore
+          POSTGRES_DB: nowcore
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U nowcore -d nowcore"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6381:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # nx affected diffs against the base commit, so shallow will not do.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm exec prettier --check .
+
+      # Fails if a project's tsconfig references have drifted from its deps.
+      - run: pnpm exec nx sync:check
+
+      # Before tests: the API's readiness test and the seed need the schema.
+      - run: pnpm exec nx run db:prisma-generate && pnpm --dir libs/db exec prisma migrate deploy
+
+      - uses: nrwl/nx-set-shas@v5
+
+      # lint carries @nx/enforce-module-boundaries (a browser app importing the
+      # database fails here) and nowcore/no-raw-design-values (a raw hex in an
+      # app fails here). budget fails when an initial route exceeds 180 KB.
+      - run: pnpm exec nx affected -t typecheck lint test build budget

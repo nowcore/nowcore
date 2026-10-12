@@ -1,0 +1,321 @@
+// The NOWCORE data model (docs/05-lld.md §1).
+//
+// Three rules run through all of it, and `src/schema.spec.ts` fails if any of
+// them is broken:
+//
+// 1. **Money is integer paise.** There is no Float and no Decimal anywhere in
+//    this file. ₹799 is 79900 and stays that through every total.
+// 2. **An order item remembers what was bought.** Title, SKU, size, colour and
+//    price are copied onto the item at purchase. The print-on-demand catalogue
+//    changes underneath us; history must not change with it.
+// 3. **Idempotency is a database guarantee.** `webhook_events` is unique on
+//    (provider, event_id). Razorpay and Printrove both retry, and both will
+//    deliver the same event twice; the second insert fails and is a no-op.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: the URL lives in prisma.config.ts and the client takes an adapter.
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------------------- enums
+
+enum DropStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILMENT_QUEUED
+  FULFILMENT_FAILED
+  PRINTING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  RTO
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  NETBANKING
+  WALLET
+  COD
+}
+
+enum TrendStatus {
+  NEW
+  SHORTLISTED
+  REJECTED
+  SHIPPED
+}
+
+// ------------------------------------------------------------------ catalogue
+
+model Drop {
+  id          String     @id @default(uuid()) @db.Uuid
+  /// 14 renders as "DROP 014". The drop's identity on every surface.
+  number      Int        @unique
+  slug        String     @unique
+  title       String
+  /// Re-tints the whole site for this drop's life. #RRGGBB, checked for
+  /// contrast by the publish check (libs/ui accentProblems).
+  accentColor String     @map("accent_color")
+  status      DropStatus @default(DRAFT)
+  opensAt     DateTime?  @map("opens_at")
+  closesAt    DateTime?  @map("closes_at")
+  /// Null means unlimited within the window.
+  editionSize Int?       @map("edition_size")
+  /// Homepage film copy, validated by `Chapters` in @nowcore/shared.
+  chapters    Json
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  products Product[]
+  trends   Trend[]
+  waitlist WaitlistSubscription[]
+
+  @@index([status, opensAt])
+  @@map("drops")
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  dropId      String   @map("drop_id") @db.Uuid
+  slug        String   @unique
+  title       String
+  description String
+  basePaise   Int      @map("base_paise")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  drop     Drop      @relation(fields: [dropId], references: [id])
+  variants Variant[]
+  assets   Asset[]
+
+  @@index([dropId])
+  @@map("products")
+}
+
+model Variant {
+  id           String  @id @default(uuid()) @db.Uuid
+  productId    String  @map("product_id") @db.Uuid
+  size         String
+  colorName    String  @map("color_name")
+  colorHex     String  @map("color_hex")
+  /// NC-014-TEE-BLK-L — see makeSku in @nowcore/shared.
+  sku          String  @unique
+  /// The printer's id for this exact garment. Null blocks publishing: an
+  /// unmapped variant takes money for something that cannot be made.
+  podVariantId String? @map("pod_variant_id")
+  pricePaise   Int     @map("price_paise")
+  soldOut      Boolean @default(false) @map("sold_out")
+  mockupUrl    String? @map("mockup_url")
+  /// Storage prefix holding the 72-frame turntable for this colourway.
+  sequenceUrl  String? @map("sequence_url")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([productId, size, colorName])
+  @@map("variants")
+}
+
+model Asset {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  kind      String // artwork | mockup | fallback-frame
+  path      String
+  bytes     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("assets")
+}
+
+// -------------------------------------------------------------------- people
+
+model Customer {
+  /// Same id as auth.users in Supabase. Guests have no row here.
+  id        String   @id @db.Uuid
+  email     String?  @unique
+  phone     String?  @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  orders    Order[]
+  addresses Address[]
+
+  @@map("customers")
+}
+
+model Address {
+  id         String  @id @default(uuid()) @db.Uuid
+  customerId String  @map("customer_id") @db.Uuid
+  name       String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  pincode    String
+  phone      String
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("addresses")
+}
+
+// ---------------------------------------------------------------------- cart
+
+model Cart {
+  id        String     @id @default(uuid()) @db.Uuid
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  items     CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String @id @default(uuid()) @db.Uuid
+  cartId    String @map("cart_id") @db.Uuid
+  variantId String @map("variant_id") @db.Uuid
+  quantity  Int
+
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, variantId])
+  @@map("cart_items")
+}
+
+// -------------------------------------------------------------------- orders
+
+model Order {
+  id              String         @id @default(uuid()) @db.Uuid
+  /// NC-10427 — what a human reads. Never used as a credential: tracking
+  /// links are signed (docs/05-lld.md §6).
+  reference       String         @unique
+  customerId      String?        @map("customer_id") @db.Uuid
+  email           String
+  phone           String
+  status          OrderStatus    @default(PENDING)
+  method          PaymentMethod?
+  subtotalPaise   Int            @map("subtotal_paise")
+  shippingPaise   Int            @map("shipping_paise")
+  taxPaise        Int            @map("tax_paise")
+  totalPaise      Int            @map("total_paise")
+  razorpayOrderId String?        @unique @map("razorpay_order_id")
+  podOrderId      String?        @unique @map("pod_order_id")
+  trackingUrl     String?        @map("tracking_url")
+  shippingAddress Json           @map("shipping_address")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  customer Customer?    @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  events   OrderEvent[]
+
+  @@index([status, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String @id @default(uuid()) @db.Uuid
+  orderId    String @map("order_id") @db.Uuid
+  /// A reference for analytics only. Display reads the snapshots below.
+  variantId  String @map("variant_id") @db.Uuid
+  titleSnap  String @map("title_snap")
+  skuSnap    String @map("sku_snap")
+  sizeSnap   String @map("size_snap")
+  colorSnap  String @map("color_snap")
+  pricePaise Int    @map("price_paise")
+  quantity   Int
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+/// Append-only. The order's true history; `orders.status` is a projection.
+model OrderEvent {
+  id        String       @id @default(uuid()) @db.Uuid
+  orderId   String       @map("order_id") @db.Uuid
+  from      OrderStatus?
+  to        OrderStatus
+  /// razorpay | printrove | operator | system
+  source    String
+  payload   Json
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
+
+/// The idempotency table. A duplicate delivery fails the unique constraint.
+model WebhookEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  /// razorpay | printrove
+  provider   String
+  eventId    String   @map("event_id")
+  receivedAt DateTime @default(now()) @map("received_at")
+
+  @@unique([provider, eventId])
+  @@map("webhook_events")
+}
+
+// ------------------------------------------------------------------- radar
+
+model Trend {
+  id         String      @id @default(uuid()) @db.Uuid
+  /// reddit | hn | google_trends | youtube
+  source     String
+  externalId String      @map("external_id")
+  term       String
+  score      Int
+  capturedAt DateTime    @map("captured_at")
+  status     TrendStatus @default(NEW)
+  dropId     String?     @map("drop_id") @db.Uuid
+
+  drop Drop? @relation(fields: [dropId], references: [id])
+
+  @@unique([source, externalId])
+  @@index([status, score])
+  @@map("trends")
+}
+
+// ----------------------------------------------------------------- retention
+
+model WaitlistSubscription {
+  id         String    @id @default(uuid()) @db.Uuid
+  email      String
+  /// Null = the next drop, whichever it is.
+  dropId     String?   @map("drop_id") @db.Uuid
+  notifiedAt DateTime? @map("notified_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  drop Drop? @relation(fields: [dropId], references: [id])
+
+  @@unique([email, dropId])
+  @@map("waitlist_subscriptions")
+}
+
+model WallPost {
+  id        String   @id @default(uuid()) @db.Uuid
+  handle    String
+  imagePath String   @map("image_path")
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("wall_posts")
+}

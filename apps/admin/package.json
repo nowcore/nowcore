@@ -1,0 +1,59 @@
+{
+  "name": "@nowcore/admin",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "admin",
+    "tags": [
+      "scope:web",
+      "type:app"
+    ],
+    "targets": {
+      "dev": {
+        "dependsOn": [
+          "^build"
+        ],
+        "options": {
+          "port": 3001
+        }
+      },
+      "build": {
+        "options": {
+          "env": {
+            "NEXT_DIST_DIR": ".next-build"
+          }
+        },
+        "outputs": [
+          "{projectRoot}/.next-build"
+        ]
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "tsc --noEmit -p tsconfig.json",
+          "cwd": "{projectRoot}"
+        },
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          "default",
+          "^production"
+        ],
+        "cache": true
+      }
+    }
+  },
+  "dependencies": {
+    "@nowcore/shared": "workspace:^",
+    "@nowcore/ui": "workspace:^",
+    "geist": "^1",
+    "next": "~16.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm check)",
+      "Bash(pnpm build)",
+      "Bash(pnpm test)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm affected)",
+      "Bash(pnpm format)",
+      "Bash(pnpm format:check)",
+      "Bash(pnpm infra:up)",
+      "Bash(pnpm infra:down)",
+      "Bash(pnpm exec nx *)",
+      "Bash(pnpm nx *)",
+      "Bash(npx nx *)",
+      "Bash(pnpm exec prettier *)",
+      "Bash(pnpm exec vitest *)",
+      "Bash(pnpm exec playwright *)",
+      "Bash(pnpm exec prisma generate)",
+      "Bash(pnpm exec prisma migrate dev *)",
+      "Bash(pnpm exec prisma migrate status)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)"
+    ],
+    "deny": ["Read(./**/.env)", "Read(./**/.env.*)"]
+  }
+}

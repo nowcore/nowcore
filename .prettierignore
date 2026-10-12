@@ -1,0 +1,11 @@
+# Generated or vendored — formatting these creates churn and, for the lockfile,
+# breaks `pnpm install --frozen-lockfile`.
+pnpm-lock.yaml
+/.nx
+**/dist
+**/out-tsc
+**/test-output
+/coverage
+**/.next*
+**/next-env.d.ts
+libs/db/prisma/migrations

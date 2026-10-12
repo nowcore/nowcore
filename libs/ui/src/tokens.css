@@ -1,0 +1,63 @@
+/*
+ * NOWCORE tokens — the only file in the repo where design values are written
+ * literally (docs/10-design-system.md). Everything else refers to these names.
+ *
+ * Imported once per app, after Tailwind:
+ *   @import 'tailwindcss';
+ *   @import '@nowcore/ui/tokens.css';
+ */
+
+:root {
+  --void: #08090b;
+  --ash: #15171b;
+  --steel: #22252b;
+  /* #8a8e96, not the first-drafted #6e7279: that measured ~4.1:1 on void and
+     fails AA for body copy. #6e7279 survives as --ghost, for ≥24px only. */
+  --smoke: #8a8e96;
+  --ghost: #6e7279;
+  --paper: #f4f3f0;
+  --paper-dim: #c9c7c1;
+  --signal: #d7ff3e;
+
+  /* Set per drop at runtime by accentVars(); defaults to the house signal. */
+  --drop-accent: var(--signal);
+  --drop-glow: rgb(215 255 62 / 0.1);
+
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;
+  --dur-base: 420ms;
+  --dur-slow: 900ms;
+
+  --tracking-micro: 0.18em;
+  --tracking-film: -0.045em;
+}
+
+@theme inline {
+  --color-void: var(--void);
+  --color-ash: var(--ash);
+  --color-steel: var(--steel);
+  --color-smoke: var(--smoke);
+  --color-ghost: var(--ghost);
+  --color-paper: var(--paper);
+  --color-paper-dim: var(--paper-dim);
+  --color-accent: var(--drop-accent);
+
+  /* Font variables are set by next/font in each app's root layout:
+     the geist package emits --font-geist-sans/mono, Instrument Serif is
+     loaded with variable --font-editorial. */
+  --font-sans: var(--font-geist-sans), 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: var(--font-editorial), Georgia, 'Times New Roman', serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+
+  --ease-enter: var(--ease-enter);
+  --ease-exit: var(--ease-exit);
+  --ease-move: var(--ease-move);
+}
+
+html {
+  background: var(--void);
+  color: var(--paper);
+  color-scheme: dark;
+}
