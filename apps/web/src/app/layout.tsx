@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Grain, MotionProvider, SmoothScroll } from '@nowcore/motion';
-import { DropTheme } from '@nowcore/ui';
-import { liveDrop } from '../lib/fixtures/live-drop';
+import { DropTheme, SIGNAL } from '@nowcore/ui';
+import { liveDrop } from '../lib/api';
 import { fontVariables } from './fonts';
 import './global.css';
 
@@ -14,11 +14,21 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: 'black', colorScheme: 'dark' };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // If the catalogue is unreachable the house signal stands in, so an API
+  // blip degrades the colour, not the whole site.
+  const accent = await liveDrop().then(
+    (d) => d.accentColor,
+    () => SIGNAL,
+  );
   return (
     <html lang="en" className={fontVariables}>
       {/* The live drop's accent re-tints every surface (CLAUDE.md, rule 1). */}
-      <DropTheme as="body" accent={liveDrop.accent}>
+      <DropTheme as="body" accent={accent}>
         <MotionProvider>
           <SmoothScroll />
           <Grain />

@@ -13,17 +13,16 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | --------------------------- | -------------------------------------------- |
 | Phase 0 — Design and decide | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks · signed off 13 Oct |
 | Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
-| **Phase 2 — The film**      | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
-| Phase 3 — Commerce          | ░░░░░░░░░░ 0 / 18 tasks                      |
+| Phase 2 — The film          | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
+| **Phase 3 — Commerce**      | ▓▓▓░░░░░░░ 5 / 18 tasks                      |
 | Phase 4 — Admin             | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 5 — Trend radar       | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
-**Next up:** Phase 3 — commerce. T-045 (catalogue API: `GET /drops/live`, `/drops/:slug`,
-`/products/:slug`) replaces `apps/web/src/lib/fixtures/live-drop.ts` — delete the fixture when it lands.
-Then the shop rail (T-046) and product page (T-047) on the same motion primitives. `<MagneticCursor>`
-(T-044) is the last open Phase 2 item and can ride along with either.
+**Next up:** checkout (T-050–T-053) — address capture, `POST /orders` re-validating price and stock,
+payments behind a port (Razorpay adapter + a fenced fake until test keys arrive), confirmation. Then
+webhooks and idempotency (T-054–T-057), then fulfilment behind `libs/pod` (T-058–T-062).
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
@@ -36,6 +35,74 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-13 — Catalogue API, shop rail, product page, cart · T-045…T-049
+
+The storefront now reads real data end to end: the homepage fixture is gone, and a visitor can pick a
+colourway and size, add to cart, and change quantities — verified by clicking through in Chrome.
+
+**What landed.**
+
+- **Catalogue API** (`apps/api/src/modules/catalogue`): live drop (or the latest if none is live),
+  archive, drop by slug, product by slug. Variants grouped into colourways (black first), sizes in garment
+  order, sold-out sizes kept (FR-5), frame URLs from each variant's `sequence_url`. `claimed` counted from
+  paid orders — the homepage now honestly says 0 of 500; the fixture's 240 was invented. 30 s shared cache.
+- **Contracts** in `libs/shared` (`catalogue.ts`, `cart.ts`), parsed by both API and web.
+- **Cart API** (`modules/cart`): create, view, set item; every change checked against live stock and
+  drop status; quantity 1–5.
+- **Web**: `lib/api.ts` (server-only, zod-parsed, 30 s data cache); the film's chapter copy now comes from
+  the drop's CMS `chapters` field; layout accent from the live drop (falls back to the house signal if the
+  API is down); cart via server actions and an httpOnly `nc_cart` cookie; `/shop` (pinned horizontal rail on
+  a new `<HorizontalRail>`), `/product/[slug]` (sticky turntable on a new non-pinning `<ScrollTrack>`, colour
+  and size selection, persistent buy bar), `/cart` (plain-form quantity controls that work without JS).
+- **Budget measured on a running server** — routes render per request now, so `budget.mjs` boots the built
+  API and web app and measures what each page's HTML actually loads.
+- `@nowcore/shared/format` — zod-free formatting for client components.
+
+**Decisions, with what was rejected.**
+
+- _Per-request rendering with a 30 s data cache, over ISR prerendering._ Prerendering would need the API
+  running at build time. Rejected reading the catalogue from Postgres in the web app (HLD §3 said so): the
+  module boundary bans `scope:web` from the database, and that ban is the credential guarantee. HLD's
+  request path is now out of date on this point and the boundary wins.
+- _Cart id as an httpOnly cookie, over a client-side cart._ The server is the source of truth for price and
+  stock; a client cart would be a second copy to reconcile.
+- _A zod-free subpath, over a lint rule._ The budget caught the regression; the subpath fixes it at the
+  source. A rule for "value imports from the shared root in client files" was rejected as hard to scope
+  correctly — the budget remains the enforcement.
+
+**Counts:** 8 projects, 74 tests. Initial routes: `/` 128.9 KB, `/shop` 128.9, `/product/…` 130.8, `/cart`
+128.9 (72–73%).
+
+**Watched failing before being trusted:**
+
+- **The budget, on a real regression** — the product page came in at **195.1 KB (108%) → FAIL**: the client
+  component imported `formatInr` from the shared root and pulled all of zod into the browser. Moved to
+  `@nowcore/shared/format`: 130.7 KB.
+- **The product page layout** — by eye in Chrome: the sticky turntable shared a column with the controls and
+  was painted over them; clicks hit the canvas. Restructured into two columns; flow re-verified.
+- **Cart refusals** — tests for sold-out size (409), closed drop (409), quantity 6 and −1 (400), unknown SKU
+  (400), malformed cart id (400).
+- **Archived still** — the API picked the alphabetically first variant (ASH), which has no frames; the shop
+  showed a blank panel. Now prefers the hero colourway; test asserts the BLK still.
+
+**Carried forward:**
+
+- **Port 4000 belongs to `country_dairy`'s API** on this machine; NOWCORE's API default moved to 4100.
+- **Port 4190 is a Fetch-spec blocked port** (ManageSieve) — undici refuses it. The budget uses 4180/3180.
+- **Browser automation vs Lenis** — scripted clicks that scroll an element into view can land before Lenis
+  finishes smoothing. Not a user bug; drive QA flows with `?tier=static` or direct clicks.
+- `/checkout` is linked from the cart and does not exist yet — next.
+- HLD §3's "browse → Prisma read replica" is superseded by the boundary; update the HLD when it is next
+  touched.
+
+**Verified:** full uncached check; budget on a running server; in Chrome — shop rail renders aligned with
+stills; product page: choose Bone + L, add → "Added — 1 in your cart", XS disabled and struck through,
+badge 1; cart: line shown, + → quantity 2, ₹1,598, badge 2.
+
+**Not verified:** a real phone; WebKit.
 
 ---
 

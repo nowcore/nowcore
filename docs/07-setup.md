@@ -23,7 +23,7 @@ pnpm db:migrate               # applies libs/db/prisma/migrations
 pnpm db:seed                  # DROP 014 live, DROP 013 archived, 56 variants — idempotent
 pnpm frames                   # renders the seed turntables into apps/web/public/frames (~50s, gitignored)
 pnpm check                    # everything green before you touch anything
-pnpm dev                      # web :3000 · admin :3001 · api :4000 · worker
+pnpm dev                      # web :3000 · admin :3001 · api :4100 · worker
 ```
 
 Ports are offset (5433, 6381) so this runs beside other projects' stacks — `classroom-metaverse`

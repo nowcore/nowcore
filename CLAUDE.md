@@ -121,7 +121,7 @@ pnpm infra:up              # Postgres :5433 + Redis :6381
 pnpm db:migrate && pnpm db:seed
 pnpm check                 # typecheck lint test build, every project
 pnpm exec nx run web:budget  # 180 KB initial-route budget — fails on regression
-pnpm dev                   # web :3000 · admin :3001 · api :4000 · worker
+pnpm dev                   # web :3000 · admin :3001 · api :4100 · worker
 ```
 
 API and worker tests use the real Postgres and Redis — run `pnpm infra:up` first.

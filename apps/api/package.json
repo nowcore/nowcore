@@ -50,6 +50,7 @@
     "@nestjs/core": "^11",
     "@nestjs/platform-fastify": "^11",
     "@nowcore/db": "workspace:^",
+    "@nowcore/shared": "workspace:^",
     "@prisma/adapter-pg": "7.10.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",

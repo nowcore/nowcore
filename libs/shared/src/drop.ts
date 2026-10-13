@@ -3,13 +3,7 @@ import { z } from 'zod';
 export const DropStatus = z.enum(['DRAFT', 'SCHEDULED', 'LIVE', 'ARCHIVED']);
 export type DropStatus = z.infer<typeof DropStatus>;
 
-/** `14` → `DROP 014`. The number is the drop's identity in every surface. */
-export function dropLabel(n: number): string {
-  if (!Number.isInteger(n) || n < 1 || n > 999) {
-    throw new RangeError(`drop number out of range: ${n}`);
-  }
-  return `DROP ${String(n).padStart(3, '0')}`;
-}
+export { dropLabel } from './format.js';
 
 /** A six-digit hex. Shorthand is refused so one colour has one spelling. */
 export const AccentHex = z

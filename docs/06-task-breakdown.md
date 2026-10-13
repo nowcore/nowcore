@@ -152,18 +152,18 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 ### E3.1 — Catalogue (2d)
 
-| ID    | Task                                                                           | Est  | D:           |
-| ----- | ------------------------------------------------------------------------------ | ---- | ------------ |
-| T-045 | API: `GET /drops/live`, `/drops/:slug`, `/products/:slug`                      | 0.5d | T-025, T-018 |
-| T-046 | `/shop` — the pinned horizontal rail                                           | 0.8d | T-045, T-030 |
-| T-047 | `/product/[slug]` — sticky scrub, variant selection, specs that swap on scroll | 0.9d | T-045, T-031 |
+| ID    | Task                                                                              | Est  | D:           |
+| ----- | --------------------------------------------------------------------------------- | ---- | ------------ |
+| T-045 | ✅ API: `GET /drops/live`, `/drops/:slug`, `/products/:slug`                      | 0.5d | T-025, T-018 |
+| T-046 | ✅ `/shop` — the pinned horizontal rail                                           | 0.8d | T-045, T-030 |
+| T-047 | ✅ `/product/[slug]` — sticky scrub, variant selection, specs that swap on scroll | 0.9d | T-045, T-031 |
 
 ### E3.2 — Cart and checkout (3d)
 
 | ID    | Task                                                                 | Est  | D:    |
 | ----- | -------------------------------------------------------------------- | ---- | ----- |
-| T-048 | Cart domain + API; server-side availability validation               | 0.6d | T-045 |
-| T-049 | `/cart` — cinematic                                                  | 0.5d | T-048 |
+| T-048 | ✅ Cart domain + API; server-side availability validation            | 0.6d | T-045 |
+| T-049 | ✅ `/cart` — cinematic                                               | 0.5d | T-048 |
 | T-050 | Address capture + Indian pincode/state validation                    | 0.4d | T-048 |
 | T-051 | `POST /orders` — **re-validates price and availability server-side** | 0.5d | T-048 |
 | T-052 | Razorpay order creation + checkout handoff (UPI, cards, COD)         | 0.7d | T-051 |

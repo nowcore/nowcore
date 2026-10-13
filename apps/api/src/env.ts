@@ -14,7 +14,8 @@ const Env = z.object({
   DATABASE_URL: z
     .url({ protocol: /^postgres(ql)?$/ })
     .default('postgresql://nowcore:nowcore@localhost:5433/nowcore'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(4000),
+  // 4100, not 4000: country_dairy's API holds 4000 on the reference machine.
+  PORT: z.coerce.number().int().min(1).max(65535).default(4100),
   /** Containers need every interface, not just loopback. */
   HOST: z.string().default('0.0.0.0'),
   /** Origins allowed to call the API with credentials: web and admin. */

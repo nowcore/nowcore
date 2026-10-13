@@ -27,3 +27,5 @@ export { Marquee } from './Marquee.js';
 export { Grain } from './Grain.js';
 export { SmoothScroll } from './SmoothScroll.js';
 export { Beat } from './Beat.js';
+export { ScrollTrack } from './ScrollTrack.js';
+export { HorizontalRail } from './HorizontalRail.js';

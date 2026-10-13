@@ -1,4 +1,4 @@
-import { formatInr, dropLabel } from '@nowcore/shared';
+import { formatInr, type DropView } from '@nowcore/shared';
 import {
   Beat,
   CanvasSequence,
@@ -6,19 +6,25 @@ import {
   ScrollStage,
   TextReveal,
 } from '@nowcore/motion';
-import { framesFor, type LiveDrop } from '../../lib/fixtures/live-drop';
 import { Countdown } from './Countdown';
+import { chapter } from './copy';
 
 /**
  * Chapter 00 — the signal (T-037). Three and a half screens: the stage pins,
  * the garment makes one full turn, the headline holds, and the edition and
- * price arrive as the turn completes.
+ * price arrive as the turn completes. Copy comes from the drop's chapters.
  */
-export function Signal({ drop }: { drop: LiveDrop }) {
-  const f = framesFor(drop.slug, drop.colourways[0]?.code ?? 'blk');
+export function Signal({ drop }: { drop: DropView }) {
+  const product = drop.products[0];
+  const colour = product?.colourways[0];
+  const f = colour?.frames;
+  const copy = chapter(drop, 'the-signal');
+  const price = product ? formatInr(product.fromPaise) : '';
+  const edition = `${drop.claimed} of ${drop.editionSize ?? '∞'} claimed`;
+
   return (
     <ScrollStage id="the-signal" label="The signal" length={3.5}>
-      {/* the accent glow behind the garment, and the vignette */}
+      {/* the accent glow behind the garment */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-[46%] h-[760px] w-[980px] max-w-[120%] -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -38,12 +44,12 @@ export function Signal({ drop }: { drop: LiveDrop }) {
       <div className="relative mx-auto grid h-full max-w-[1280px] grid-cols-1 content-center items-center gap-4 px-5 pb-24 pt-20 md:grid-cols-[1fr_minmax(0,380px)_1fr] md:gap-6 md:px-16 md:pb-28 md:pt-24">
         <div className="order-2 flex flex-col gap-3 md:order-1 md:gap-5">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-smoke">
-            {dropLabel(drop.number)} — {drop.title}
+            {copy.kicker}
           </p>
           <TextReveal
             as="h1"
             className="leading-[0.94]"
-            lines={['Wear the', 'moment.']}
+            lines={[copy.lineOne, copy.lineTwo]}
             lineClassNames={[
               'text-[clamp(2.75rem,6vw,4.75rem)] font-medium tracking-[-0.045em]',
               'font-serif italic text-[clamp(3rem,6.6vw,5.25rem)] -ml-[3px]',
@@ -53,26 +59,27 @@ export function Signal({ drop }: { drop: LiveDrop }) {
             Printed the day you order it. Gone in 72 hours. Never restocked.
           </p>
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ghost md:hidden">
-            {drop.claimed} of {drop.editionSize} claimed ·{' '}
-            {formatInr(drop.pricePaise)}
+            {edition} · {price}
           </p>
         </div>
 
         <div className="order-1 mx-auto w-[min(300px,34svh)] md:order-2 md:w-full md:max-w-[380px]">
-          <CanvasSequence
-            frames={f.full}
-            reducedFrames={f.reduced}
-            fallback={f.still}
-            alt={`${drop.title} tee in ${drop.colourways[0]?.name ?? 'black'}, turning`}
-            width={f.width}
-            height={f.height}
-            className="drop-shadow-[0_40px_70px_var(--void)]"
-          />
+          {f && (
+            <CanvasSequence
+              frames={f.full}
+              reducedFrames={f.reduced}
+              fallback={f.still}
+              alt={`${drop.title} tee in ${colour?.name ?? ''}, turning`}
+              width={f.width}
+              height={f.height}
+              className="drop-shadow-[0_40px_70px_var(--void)]"
+            />
+          )}
         </div>
 
         <div className="order-3 hidden flex-col items-end gap-3.5 text-right md:flex">
           <Beat from={0.15} to={0.45}>
-            <p className="font-serif italic text-[46px] leading-[1.05] text-paper-dim">
+            <p className="font-serif text-[46px] italic leading-[1.05] text-paper-dim">
               Already
               <br />
               fading.
@@ -80,9 +87,9 @@ export function Signal({ drop }: { drop: LiveDrop }) {
           </Beat>
           <Beat from={0.55} to={0.85}>
             <p className="font-mono text-[11px] uppercase leading-[1.9] tracking-[0.18em] text-ghost">
-              {drop.claimed} of {drop.editionSize} claimed
+              {edition}
               <br />
-              {formatInr(drop.pricePaise)} · ships 3–5 days
+              {price} · ships 3–5 days
             </p>
           </Beat>
         </div>
@@ -94,7 +101,10 @@ export function Signal({ drop }: { drop: LiveDrop }) {
           <span className="block h-px w-[22%] bg-accent" />
         </span>
         <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-smoke">
-          The signal · <Countdown closesAt={drop.closesAt} />
+          The signal{drop.status === 'LIVE' && drop.closesAt ? ' · ' : ''}
+          {drop.status === 'LIVE' && drop.closesAt && (
+            <Countdown closesAt={drop.closesAt} />
+          )}
         </span>
       </div>
     </ScrollStage>

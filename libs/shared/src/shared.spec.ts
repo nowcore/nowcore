@@ -101,3 +101,12 @@ describe('order state machine', () => {
     ]);
   });
 });
+
+describe('client-safe formatting', () => {
+  it('has no runtime dependencies, so client components can use it', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const src = readFileSync(join(import.meta.dirname, 'format.ts'), 'utf8');
+    expect(src).not.toMatch(/^import /m);
+  });
+});

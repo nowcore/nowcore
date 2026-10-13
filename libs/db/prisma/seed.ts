@@ -16,6 +16,7 @@ const url =
   'postgresql://nowcore:nowcore@localhost:5433/nowcore';
 const db = new PrismaClient({ adapter: new PrismaPg(url) });
 
+// Drop 013 only has the BLK turntable rendered (apps/worker seed-frames.ts).
 const COLOURWAYS = [
   { code: 'BLK', name: 'Void black', hex: '#15171B' },
   { code: 'BONE', name: 'Bone', hex: '#E8E5DE' },
@@ -83,7 +84,11 @@ async function drop(input: {
       });
       await db.variant.upsert({
         where: { sku },
-        update: { soldOut: input.soldOut.includes(size) },
+        update: {
+          soldOut: input.soldOut.includes(size),
+          sequenceUrl: `/frames/${input.slug}/${c.code.toLowerCase()}`,
+          mockupUrl: `/frames/${input.slug}/${c.code.toLowerCase()}/still.avif`,
+        },
         create: {
           productId: p.id,
           size,

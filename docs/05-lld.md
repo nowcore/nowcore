@@ -135,14 +135,17 @@ so a POD catalogue price change cannot rewrite history. `WebhookEvent` has a uni
 
 ## 2. API surface
 
-Public, consumed by `apps/web`:
+Public, consumed by `apps/web`. **Built (T-045, T-048)** — shapes are the zod contracts in
+`libs/shared/src/catalogue.ts` and `cart.ts`, parsed on both sides:
 
 ```
-GET   /drops/live                      the live drop with chapters
-GET   /drops/:slug                     any drop, live or archived
-GET   /products/:slug                  product with variants and availability
-POST  /carts                           create
-POST  /carts/:id/items                 add — validates availability
+GET   /drops/live                      the live drop (or the latest, if none is live) with chapters
+GET   /drops/archive                   closed drops, newest first
+GET   /drops/:slug                     any non-draft drop
+GET   /products/:slug                  product, its drop, colourways → sizes, frames
+POST  /carts                           create; the id is the credential (httpOnly cookie on web)
+GET   /carts/:id                       lines priced from current variants, availability flagged
+PUT   /carts/:id/items                 {sku, quantity 0..5} — refuses sold out, closed drop
 POST  /orders                          re-validates price + availability, creates Razorpay order
 GET   /orders/:reference?token=        tracking without an account (signed link)
 POST  /waitlist                        subscribe

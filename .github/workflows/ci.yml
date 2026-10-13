@@ -66,8 +66,10 @@ jobs:
       # Fails if a project's tsconfig references have drifted from its deps.
       - run: pnpm exec nx sync:check
 
-      # Before tests: the API's readiness test and the seed need the schema.
+      # Before tests: the API's catalogue and cart tests, and the budget (which
+      # boots the real API), read the seeded drops.
       - run: pnpm exec nx run db:prisma-generate && pnpm --dir libs/db exec prisma migrate deploy
+      - run: pnpm db:seed
 
       - uses: nrwl/nx-set-shas@v5
 

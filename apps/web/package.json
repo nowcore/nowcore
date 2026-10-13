@@ -34,7 +34,13 @@
           "cwd": "{projectRoot}"
         },
         "dependsOn": [
-          "build"
+          "build",
+          {
+            "projects": [
+              "api"
+            ],
+            "target": "build"
+          }
         ],
         "inputs": [
           "production",
@@ -66,7 +72,9 @@
     "geist": "^1",
     "next": "~16.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "server-only": "^0.0.1",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

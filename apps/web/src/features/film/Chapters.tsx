@@ -1,12 +1,7 @@
-import { formatInr } from '@nowcore/shared';
+import { formatInr, type DropSummary, type DropView } from '@nowcore/shared';
 import { Beat, CanvasSequence, Marquee, ScrollStage } from '@nowcore/motion';
-import {
-  archive,
-  framesFor,
-  trends,
-  wall,
-  type LiveDrop,
-} from '../../lib/fixtures/live-drop';
+import { trends, wall } from '../../lib/placeholders';
+import { chapter } from './copy';
 import { ChapterHead } from './Kicker';
 
 const mono = 'font-mono text-[11px] uppercase tracking-[0.18em]';
@@ -19,7 +14,8 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 const stamp = (iso: string) => dateFmt.format(new Date(iso)).toUpperCase();
 
 /** 01 — what's now. The radar, as a ticker. Not pinned: it reads at a glance. */
-export function WhatsNow() {
+export function WhatsNow({ drop }: { drop: DropView }) {
+  const c = chapter(drop, 'whats-now');
   return (
     <section
       id="whats-now"
@@ -29,11 +25,7 @@ export function WhatsNow() {
       <div className="mx-auto flex max-w-[1280px] flex-col gap-10 px-6 md:px-12">
         <div className="flex flex-wrap items-end justify-between gap-7">
           <div id="whats-now-h">
-            <ChapterHead
-              kicker="01 / What's now"
-              one="The internet,"
-              two="right now."
-            />
+            <ChapterHead kicker={c.kicker} one={c.lineOne} two={c.lineTwo} />
           </div>
           <p className={`${mono} flex items-center gap-2.5 text-smoke`}>
             <span
@@ -77,9 +69,11 @@ export function WhatsNow() {
 }
 
 /** 02 — the drop. Pinned; the second colourway turns while the specs arrive. */
-export function TheDrop({ drop }: { drop: LiveDrop }) {
-  const c = drop.colourways[1] ?? drop.colourways[0];
-  const f = framesFor(drop.slug, c?.code ?? 'blk');
+export function TheDrop({ drop }: { drop: DropView }) {
+  const product = drop.products[0];
+  const c = product?.colourways[1] ?? product?.colourways[0];
+  const f = c?.frames;
+  const copy = chapter(drop, 'the-drop');
   const specs = [
     ['Fabric', '200gsm combed cotton, bio-washed'],
     ['Print', 'DTF, 300dpi, crack-resistant'],
@@ -89,21 +83,26 @@ export function TheDrop({ drop }: { drop: LiveDrop }) {
     <ScrollStage id="the-drop" label="The drop" length={2.5}>
       <div className="mx-auto grid h-full max-w-[1280px] grid-cols-1 content-center items-center gap-5 px-5 py-20 md:grid-cols-2 md:gap-10 md:px-12">
         <div className="mx-auto w-[min(220px,24svh)] md:w-full md:max-w-[380px]">
-          <CanvasSequence
-            frames={f.full}
-            reducedFrames={f.reduced}
-            fallback={f.still}
-            alt={`${drop.title} tee in ${c?.name ?? ''}`}
-            width={f.width}
-            height={f.height}
-          />
+          {f && (
+            <CanvasSequence
+              frames={f.full}
+              reducedFrames={f.reduced}
+              fallback={f.still}
+              alt={`${drop.title} tee in ${c?.name ?? ''}`}
+              width={f.width}
+              height={f.height}
+            />
+          )}
         </div>
         <div className="flex flex-col gap-4 md:gap-7">
-          <ChapterHead kicker="02 / The drop" one="Mediocre" two="by design." />
+          <ChapterHead
+            kicker={copy.kicker}
+            one={copy.lineOne}
+            two={copy.lineTwo}
+          />
           <Beat from={0.1} to={0.35} className="hidden md:block">
             <p className="max-w-[440px] leading-relaxed text-smoke">
-              200gsm combed cotton, bio-washed. Direct-to-film print that will
-              not crack. Printed in India the day you order it.
+              {product?.description}
             </p>
           </Beat>
           <Beat from={0.3} to={0.6}>
@@ -126,10 +125,10 @@ export function TheDrop({ drop }: { drop: LiveDrop }) {
           <Beat from={0.55} to={0.85}>
             <div className="flex flex-wrap items-center gap-5">
               <span className="font-mono text-[26px] text-paper md:text-[32px]">
-                {formatInr(drop.pricePaise)}
+                {product ? formatInr(product.fromPaise) : ''}
               </span>
               <a
-                href="/product/mediocre-by-design-tee"
+                href={product ? `/product/${product.slug}` : '/shop'}
                 className="inline-flex min-h-[52px] items-center gap-2.5 rounded-full bg-accent px-[30px] text-[15px] font-medium text-void"
               >
                 Take it <span aria-hidden="true">↗</span>
@@ -137,7 +136,7 @@ export function TheDrop({ drop }: { drop: LiveDrop }) {
               <span
                 className={`${mono} hidden leading-[1.8] text-ghost md:inline`}
               >
-                {drop.claimed} / {drop.editionSize} claimed
+                {drop.claimed} / {drop.editionSize ?? '∞'} claimed
                 <br />
                 UPI · Cards · COD
               </span>
@@ -150,7 +149,14 @@ export function TheDrop({ drop }: { drop: LiveDrop }) {
 }
 
 /** 03 — the archive. Here, then gone. */
-export function TheArchive() {
+export function TheArchive({
+  drop,
+  archive,
+}: {
+  drop: DropView;
+  archive: DropSummary[];
+}) {
+  const c = chapter(drop, 'the-archive');
   return (
     <section
       id="the-archive"
@@ -160,17 +166,18 @@ export function TheArchive() {
       <div className="mx-auto flex max-w-[1280px] flex-col gap-10 px-6 md:px-12">
         <div className="flex flex-wrap items-end justify-between gap-7">
           <div id="the-archive-h">
-            <ChapterHead
-              kicker="03 / The archive"
-              one="Here,"
-              two="then gone."
-            />
+            <ChapterHead kicker={c.kicker} one={c.lineOne} two={c.lineTwo} />
           </div>
           <p className="max-w-[360px] leading-relaxed text-smoke">
             Nothing is restocked. A closed drop keeps its page forever —
             stamped, desaturated, unbuyable.
           </p>
         </div>
+        {archive.length === 0 && (
+          <p className="text-smoke">
+            This is the first one. Nothing has closed yet.
+          </p>
+        )}
         <ul className="grid grid-cols-2 gap-3.5 md:grid-cols-5">
           {archive.map((d) => (
             <li
@@ -178,12 +185,14 @@ export function TheArchive() {
               className="overflow-hidden rounded border border-steel/70 bg-ash/30"
             >
               <div className="relative flex h-[180px] items-center justify-center grayscale">
-                <img
-                  src={`/frames/${d.number === 13 ? d.slug : 'touch-grass-protocol'}/blk/still.avif`}
-                  alt=""
-                  loading="lazy"
-                  className="h-[150px] w-auto opacity-40"
-                />
+                {d.still && (
+                  <img
+                    src={d.still}
+                    alt=""
+                    loading="lazy"
+                    className="h-[150px] w-auto opacity-40"
+                  />
+                )}
                 <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-y border-steel py-1.5 text-center font-mono text-[10px] tracking-[0.24em] text-smoke">
                   ARCHIVED
                 </span>
@@ -195,9 +204,11 @@ export function TheArchive() {
                 <span className="text-[13px] leading-snug text-smoke">
                   {d.title}
                 </span>
-                <span className="font-mono text-[10px] tracking-[0.1em] text-ghost">
-                  {stamp(d.closedOn)}
-                </span>
+                {d.closesAt && (
+                  <span className="font-mono text-[10px] tracking-[0.1em] text-ghost">
+                    {stamp(d.closesAt)}
+                  </span>
+                )}
               </div>
             </li>
           ))}
@@ -208,7 +219,8 @@ export function TheArchive() {
 }
 
 /** 04 — the making. Pinned; three beats arrive in order. */
-export function TheMaking() {
+export function TheMaking({ drop }: { drop: DropView }) {
+  const c = chapter(drop, 'the-making');
   const beats = [
     [
       'Signal',
@@ -232,11 +244,7 @@ export function TheMaking() {
   return (
     <ScrollStage id="the-making" label="The making" length={2.5}>
       <div className="mx-auto flex h-full max-w-[1280px] flex-col justify-center gap-12 px-6 md:px-12">
-        <ChapterHead
-          kicker="04 / The making"
-          one="Spotted at nine."
-          two="Shipping by six."
-        />
+        <ChapterHead kicker={c.kicker} one={c.lineOne} two={c.lineTwo} />
         <ol className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {beats.map(([k, t, h, d], i) => (
             <li key={k}>
@@ -269,7 +277,8 @@ export function TheMaking() {
 }
 
 /** 05 — the wall. */
-export function TheWall() {
+export function TheWall({ drop }: { drop: DropView }) {
+  const c = chapter(drop, 'the-wall');
   return (
     <section
       id="the-wall"
@@ -279,11 +288,7 @@ export function TheWall() {
       <div className="mx-auto flex max-w-[1280px] flex-col gap-10 px-6 md:px-12">
         <div className="flex flex-wrap items-end justify-between gap-7">
           <div id="the-wall-h">
-            <ChapterHead
-              kicker="05 / The wall"
-              one="Worn by"
-              two="the timeline."
-            />
+            <ChapterHead kicker={c.kicker} one={c.lineOne} two={c.lineTwo} />
           </div>
           <a
             href="/wall"
@@ -310,7 +315,8 @@ export function TheWall() {
 }
 
 /** 06 — take it. The waitlist and the footer. */
-export function TakeIt() {
+export function TakeIt({ drop }: { drop: DropView }) {
+  const c = chapter(drop, 'take-it');
   const links = [
     'Shop',
     'The archive',
@@ -335,9 +341,9 @@ export function TakeIt() {
         <div className="flex flex-wrap items-end justify-between gap-12">
           <div id="take-it-h" className="flex-[1_1_420px]">
             <ChapterHead
-              kicker="06 / Take it"
-              one="Never miss"
-              two="a drop."
+              kicker={c.kicker}
+              one={c.lineOne}
+              two={c.lineTwo}
               size="film"
             />
           </div>

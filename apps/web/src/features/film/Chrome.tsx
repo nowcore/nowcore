@@ -1,10 +1,24 @@
+import { dropLabel, type DropSummary } from '@nowcore/shared';
 import { Countdown } from './Countdown';
 
 const navLink =
   'min-h-10 inline-flex items-center px-[18px] rounded-full text-sm text-paper-dim hover:text-paper transition-colors';
+const navActive =
+  'min-h-10 inline-flex items-center px-[18px] rounded-full text-sm bg-paper text-void';
 
-/** Header and dock: fixed over the film, glass, always reachable. */
-export function FilmChrome({ closesAt }: { closesAt: string }) {
+/** Header and dock: fixed over every storefront page, glass, always reachable. */
+export function FilmChrome({
+  drop,
+  buyHref,
+  current = 'drop',
+  cartCount = 0,
+}: {
+  drop: DropSummary;
+  /** Where "Take it" goes — the live drop's product. */
+  buyHref: string;
+  current?: 'drop' | 'shop' | 'none';
+  cartCount?: number;
+}) {
   return (
     <>
       {/* The backdrop fades from the void so a headline scrolling under the
@@ -18,16 +32,20 @@ export function FilmChrome({ closesAt }: { closesAt: string }) {
         </a>
         <nav
           aria-label="Primary"
-          className="hidden md:inline-flex items-center gap-0.5 rounded-full border border-paper/10 bg-ash/70 p-1.5 backdrop-blur-xl"
+          className="hidden items-center gap-0.5 rounded-full border border-paper/10 bg-ash/70 p-1.5 backdrop-blur-xl md:inline-flex"
         >
           <a
             href="/"
-            aria-current="page"
-            className={`${navLink} bg-paper text-void hover:text-void`}
+            aria-current={current === 'drop' ? 'page' : undefined}
+            className={current === 'drop' ? navActive : navLink}
           >
-            Drop 014
+            {dropLabel(drop.number).replace('DROP', 'Drop')}
           </a>
-          <a href="/shop" className={navLink}>
+          <a
+            href="/shop"
+            aria-current={current === 'shop' ? 'page' : undefined}
+            className={current === 'shop' ? navActive : navLink}
+          >
             Shop
           </a>
           <a href="/#the-archive" className={navLink}>
@@ -38,24 +56,26 @@ export function FilmChrome({ closesAt }: { closesAt: string }) {
           </a>
         </nav>
         <a
-          href="/product/mediocre-by-design-tee"
+          href={buyHref}
           className="inline-flex min-h-11 items-center gap-2.5 rounded-full bg-accent px-5 text-sm font-medium text-void md:px-[22px]"
         >
           Take it <span aria-hidden="true">↗</span>
         </a>
       </header>
 
-      <div className="fixed bottom-5 right-5 z-40 md:bottom-6 inline-flex items-center gap-0.5 rounded-full border border-paper/10 bg-ash/70 p-1.5 backdrop-blur-xl md:right-10">
-        <Countdown
-          closesAt={closesAt}
-          className="inline-flex min-h-10 items-center px-3.5 font-mono text-xs text-accent"
-        />
+      <div className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-0.5 rounded-full border border-paper/10 bg-ash/70 p-1.5 backdrop-blur-xl md:bottom-6 md:right-10">
+        {drop.status === 'LIVE' && drop.closesAt && (
+          <Countdown
+            closesAt={drop.closesAt}
+            className="inline-flex min-h-10 items-center px-3.5 font-mono text-xs text-accent"
+          />
+        )}
         <a
           href="/cart"
-          aria-label="Open cart, 0 items"
+          aria-label={`Open cart, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}
           className="inline-flex min-h-10 min-w-11 items-center justify-center rounded-full bg-paper font-mono text-xs text-void"
         >
-          0
+          {cartCount}
         </a>
       </div>
     </>

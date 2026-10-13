@@ -14,10 +14,4 @@ export default [
     // `var` and `@ts-ignore` in generated code nobody wrote.
     ignores: ['.next*/**/*', '**/out-tsc'],
   },
-  {
-    // A drop's accent is data, not styling. The fixture stands in for the
-    // catalogue API until T-045 and is deleted then.
-    files: ['src/lib/fixtures/**'],
-    rules: { 'nowcore/no-raw-design-values': 'off' },
-  },
 ];
