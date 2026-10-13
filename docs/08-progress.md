@@ -14,19 +14,22 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 0 — Design and decide | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks · signed off 13 Oct |
 | Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
 | Phase 2 — The film          | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
-| **Phase 3 — Commerce**      | ▓▓▓░░░░░░░ 5 / 18 tasks                      |
+| **Phase 3 — Commerce**      | ▓▓▓▓▓▓▓░░░ 12 / 18 tasks · 1 🟡              |
 | Phase 4 — Admin             | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 5 — Trend radar       | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
-**Next up:** checkout (T-050–T-053) — address capture, `POST /orders` re-validating price and stock,
-payments behind a port (Razorpay adapter + a fenced fake until test keys arrive), confirmation. Then
-webhooks and idempotency (T-054–T-057), then fulfilment behind `libs/pod` (T-058–T-062).
+**Next up:** fulfilment (T-058–T-062) — `libs/pod` with the `PodProvider` port and a sandbox printer, the
+`pod.submit` job, printer webhooks, buyer notifications. The Printrove adapter waits on their API docs and
+credentials; the Razorpay adapter waits on test keys.
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
 numbers, not opinions.
+
+**Needs from the operator:** Razorpay **test** keys (key id, key secret, webhook secret) to run T-052
+against Razorpay itself. Until then checkout runs on the fake provider, which signs exactly as Razorpay does.
 
 **Needs a decision:** none blocking. Operator decided 13 Oct: **local Postgres only for now** — the
 hosted Supabase project (T-017) and the GitHub remote (T-015) come later and will be shared then. All
@@ -35,6 +38,80 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-13 — Checkout, payments, webhooks and reconciliation · T-050…T-057
+
+A buyer can now go from product page to a confirmed, paid order. Verified by placing order NC-10491 in a
+real browser with the fake provider: validation errors per field, payment, confirmation page.
+
+**What landed.**
+
+- **Checkout contracts** (`libs/shared/src/checkout.ts`): address with PIN-code and state validation,
+  Indian mobile normalised to +91, `priceOrder` (prices GST-inclusive, ₹80 shipping under ₹999, ₹80 COD fee).
+- **`POST /orders`** re-checks every line at the moment of ordering — variant exists, drop live, not sold
+  out, edition not exhausted — prices from the variant, snapshots onto order items. References from a
+  Postgres sequence (`NC-10427`…). The cart empties only when payment lands.
+- **Payments behind a port**: `RazorpayProvider` (documented Orders API, HMAC-SHA256 checkout and webhook
+  signatures, `X-Razorpay-Event-Id`) and `FakeProvider` (signs identically). The API **refuses to boot**
+  with the fake provider in production, and its pay route is only registered when it is configured.
+- **One guarded transition** (`OrderStateService`): `UPDATE … WHERE status = from` plus the OrderEvent in one
+  transaction. The checkout verify, the webhook and reconciliation all go through it.
+- **Webhooks** per docs/05 §3: signature over raw bytes first, `webhook_events` unique insert as the
+  idempotency gate, 200 for anything understood.
+- **Reconciliation** every 5 min for orders pending 2 min–24 h (in the API until the worker has a database).
+- **COD policy** from docs/11: refused until a prepaid order has been delivered to that phone.
+- **Signed order links**: `/order/NC-…?t=` with an HMAC token; the sequential reference is never a credential.
+- **Web**: `/checkout` (calm, per-field server errors, test-payment sheet or Razorpay Checkout), `/order/…`
+  (confirmation, progress, polls while a payment is still confirming — T-053).
+- `/checkout` joined the budget, measured with a real cart.
+
+**Decisions, with what was rejected.**
+
+- _A conditional UPDATE as the concurrency guard, over a row lock or an application mutex._ It is one
+  statement, needs no lock management, and makes the race testable.
+- _COD confirmed immediately (PAID), over a PENDING_COD state._ The docs/11 confirmation call/OTP before
+  printing is not built; marked in code and carried forward rather than half-modelled.
+- _Reconciliation in the API for now, over waiting for the worker to get a database._ A lost webhook is a
+  paid buyer told nothing; it could not wait. Safe on many instances because markPaid is idempotent.
+- _Echo submitted values back from the action, over a controlled form._ Keeps the form working before
+  JavaScript, and is the smaller change.
+
+**Counts:** 8 projects, 77 tests (22 in the API, 10 for orders). Initial routes 129.6–132.0 KB (72–73%).
+
+**Watched failing before being trusted:**
+
+- **The transition guard** — removed `status: from` from the update: the idempotency test and the
+  verify-vs-webhook race test both failed (the order was paid twice). Restored: pass.
+- **Webhook dedup** — removed the `webhook_events` insert: the duplicate-delivery test failed. (The first
+  attempt at this sabotage silently did nothing — the sed missed a Prettier-wrapped line — and the suite
+  "passed". Caught because the duplicate test _should_ have failed; re-run properly.)
+- **Edition limit** — my own test design exhausted a 3-garment edition and four later tests failed with
+  409s. The test was wrong; the guard was right.
+- **The checkout form wiped every field after one typo** — found in the browser: React 19 resets an
+  uncontrolled form after its action. Fixed by echoing values back; the `<select>` also needed a key,
+  because a mounted select ignores a changed `defaultValue`. Re-verified: every field survives.
+- **Order links** — tampered token, missing token, and a neighbouring reference with a valid token all 404.
+- **An untrue promise** — the confirmation page said "a receipt is on its way" when no email exists. Removed.
+
+**Carried forward:**
+
+- **Razorpay itself has never been called.** Signature maths is unit-tested against the documented scheme;
+  the HTTP calls and Checkout.js handoff are unverified until test keys exist.
+- **COD confirmation (call/OTP) before printing** — docs/11 policy, not built.
+- **Edition limit is checked, not reserved.** Two buyers racing for the last garment can both pass the check.
+  Acceptable at this scale; a reservation or a `SELECT … FOR UPDATE` on the drop fixes it when it matters.
+- **Reconciliation moves to the worker** once the worker has a database (with T-060).
+- **No emails yet** (T-062) — the order page says to keep the link, honestly.
+- **Local DB now has real-looking orders** from the browser run (NC-10491). Harmless locally; `pnpm infra:reset`
+  clears everything.
+
+**Verified:** full uncached check; in Chrome via the DevTools MCP — add to cart, bad PIN + bad mobile → errors
+on those fields with all input kept, fix → "Order NC-10491 is held for you", Pay (test) → "It is yours",
+Confirmed, ₹879, no console errors; tampered links 404; `claimed` went 0 → 1.
+
+**Not verified:** Razorpay; a real phone; WebKit.
 
 ---
 

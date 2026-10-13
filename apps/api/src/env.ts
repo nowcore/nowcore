@@ -9,21 +9,83 @@ import { z } from 'zod';
  * the tasks that use them — T-052, T-059, T-063 — so nothing here is a
  * variable that nothing reads.
  */
-const Env = z.object({
-  /** Defaults to the Postgres infra/docker-compose.yml publishes. */
-  DATABASE_URL: z
-    .url({ protocol: /^postgres(ql)?$/ })
-    .default('postgresql://nowcore:nowcore@localhost:5433/nowcore'),
-  // 4100, not 4000: country_dairy's API holds 4000 on the reference machine.
-  PORT: z.coerce.number().int().min(1).max(65535).default(4100),
-  /** Containers need every interface, not just loopback. */
-  HOST: z.string().default('0.0.0.0'),
-  /** Origins allowed to call the API with credentials: web and admin. */
-  WEB_ORIGINS: z
-    .string()
-    .default('http://localhost:3000,http://localhost:3001')
-    .transform((s) => s.split(',').map((o) => o.trim())),
-});
+const Env = z
+  .object({
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
+    /** Defaults to the Postgres infra/docker-compose.yml publishes. */
+    DATABASE_URL: z
+      .url({ protocol: /^postgres(ql)?$/ })
+      .default('postgresql://nowcore:nowcore@localhost:5433/nowcore'),
+    // 4100, not 4000: country_dairy's API holds 4000 on the reference machine.
+    PORT: z.coerce.number().int().min(1).max(65535).default(4100),
+    /** Containers need every interface, not just loopback. */
+    HOST: z.string().default('0.0.0.0'),
+    /** Origins allowed to call the API with credentials: web and admin. */
+    WEB_ORIGINS: z
+      .string()
+      .default('http://localhost:3000,http://localhost:3001')
+      .transform((s) => s.split(',').map((o) => o.trim())),
+
+    /**
+     * Which payment provider takes money. `fake` exists so the whole checkout
+     * can be run locally before Razorpay test keys exist; it is refused in
+     * production below, so it can never take a real order.
+     */
+    PAYMENTS: z.enum(['razorpay', 'fake']).default('fake'),
+    RAZORPAY_KEY_ID: z.string().optional(),
+    RAZORPAY_KEY_SECRET: z.string().optional(),
+    RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+    /** Secret for the fake provider's signatures. Development only. */
+    FAKE_PAYMENTS_SECRET: z
+      .string()
+      .default('fake-payments-secret-for-local-dev-only'),
+
+    /**
+     * Signs order-view tokens (docs/05 §6). A default exists for local work
+     * only; production must set its own, and is refused without one.
+     */
+    ORDER_TOKEN_SECRET: z
+      .string()
+      .min(32)
+      .default('local-dev-order-token-secret-change-me-0000'),
+
+    /** Poll the provider for orders a webhook never confirmed (T-057). Off in tests. */
+    RECONCILE: z.enum(['on', 'off']).default('on'),
+  })
+  .superRefine((env, ctx) => {
+    if (env.PAYMENTS === 'razorpay') {
+      for (const key of [
+        'RAZORPAY_KEY_ID',
+        'RAZORPAY_KEY_SECRET',
+        'RAZORPAY_WEBHOOK_SECRET',
+      ] as const) {
+        if (!env[key])
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: 'required when PAYMENTS=razorpay',
+          });
+      }
+    }
+    if (env.NODE_ENV === 'production') {
+      if (env.PAYMENTS === 'fake') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['PAYMENTS'],
+          message: 'the fake provider can never run in production',
+        });
+      }
+      if (env.ORDER_TOKEN_SECRET.startsWith('local-dev-')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ORDER_TOKEN_SECRET'],
+          message: 'set a real secret in production',
+        });
+      }
+    }
+  });
 
 export type Env = z.infer<typeof Env>;
 

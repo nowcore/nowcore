@@ -4,3 +4,4 @@ export * from './sku.js';
 export * from './order.js';
 export * from './catalogue.js';
 export * from './cart.js';
+export * from './checkout.js';

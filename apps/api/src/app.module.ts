@@ -2,6 +2,8 @@ import { Global, Module, type DynamicModule } from '@nestjs/common';
 import { ENV, readEnv, type Env } from './env.js';
 import { HealthController } from './health.controller.js';
 import { CartModule } from './modules/cart/cart.module.js';
+import { OrdersModule } from './modules/orders/orders.module.js';
+import { PaymentsModule } from './modules/payments/payments.module.js';
 import { CatalogueModule } from './modules/catalogue/catalogue.module.js';
 import { PrismaService } from './prisma.service.js';
 
@@ -16,7 +18,12 @@ export class AppModule {
   static with(env: Env = readEnv()): DynamicModule {
     return {
       module: AppModule,
-      imports: [CatalogueModule, CartModule],
+      imports: [
+        CatalogueModule,
+        CartModule,
+        PaymentsModule,
+        OrdersModule.with(env.PAYMENTS),
+      ],
       controllers: [HealthController],
       providers: [{ provide: ENV, useValue: env }, PrismaService],
       exports: [ENV, PrismaService],

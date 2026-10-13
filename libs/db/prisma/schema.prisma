@@ -201,8 +201,9 @@ model CartItem {
 
 model Order {
   id              String         @id @default(uuid()) @db.Uuid
-  /// NC-10427 — what a human reads. Never used as a credential: tracking
-  /// links are signed (docs/05-lld.md §6).
+  /// NC-10427 — what a human reads. Drawn from the `order_reference_seq`
+  /// sequence, never from a count two buyers could race. Never a credential:
+  /// tracking links are signed (docs/05-lld.md §6).
   reference       String         @unique
   customerId      String?        @map("customer_id") @db.Uuid
   email           String
@@ -217,6 +218,9 @@ model Order {
   podOrderId      String?        @unique @map("pod_order_id")
   trackingUrl     String?        @map("tracking_url")
   shippingAddress Json           @map("shipping_address")
+  /// The cart this order came from. Emptied when payment lands, not when the
+  /// order is placed — a failed payment must leave the buyer's cart intact.
+  cartId          String?        @map("cart_id") @db.Uuid
   createdAt       DateTime       @default(now()) @map("created_at")
 
   customer Customer?    @relation(fields: [customerId], references: [id])

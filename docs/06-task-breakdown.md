@@ -160,25 +160,25 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 ### E3.2 — Cart and checkout (3d)
 
-| ID    | Task                                                                 | Est  | D:    |
-| ----- | -------------------------------------------------------------------- | ---- | ----- |
-| T-048 | ✅ Cart domain + API; server-side availability validation            | 0.6d | T-045 |
-| T-049 | ✅ `/cart` — cinematic                                               | 0.5d | T-048 |
-| T-050 | Address capture + Indian pincode/state validation                    | 0.4d | T-048 |
-| T-051 | `POST /orders` — **re-validates price and availability server-side** | 0.5d | T-048 |
-| T-052 | Razorpay order creation + checkout handoff (UPI, cards, COD)         | 0.7d | T-051 |
-| T-053 | Confirmation page that polls for a late webhook instead of erroring  | 0.3d | T-052 |
+| ID    | Task                                                                                                                                                                                                                    | Est  | D:    |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- |
+| T-048 | ✅ Cart domain + API; server-side availability validation                                                                                                                                                               | 0.6d | T-045 |
+| T-049 | ✅ `/cart` — cinematic                                                                                                                                                                                                  | 0.5d | T-048 |
+| T-050 | ✅ Address capture + Indian pincode/state validation                                                                                                                                                                    | 0.4d | T-048 |
+| T-051 | ✅ `POST /orders` — **re-validates price and availability server-side**                                                                                                                                                 | 0.5d | T-048 |
+| T-052 | 🟡 Razorpay order creation + checkout handoff (UPI, cards, COD) — adapter written to the documented API, signatures unit-tested; **never run against Razorpay** (no test keys yet). Fake provider runs the flow locally | 0.7d | T-051 |
+| T-053 | ✅ Confirmation page that polls for a late webhook instead of erroring                                                                                                                                                  | 0.3d | T-052 |
 
 **done:** a test ₹10 order completes over UPI and COD and reaches `PAID`.
 
 ### E3.3 — Payments and webhooks (2d)
 
-| ID    | Task                                                                       | Est  | D:    |
-| ----- | -------------------------------------------------------------------------- | ---- | ----- |
-| T-054 | `WebhookEvent` idempotency table + guard, per [05 §3](./05-lld.md)         | 0.4d | T-018 |
-| T-055 | `POST /webhooks/razorpay` — raw-body signature verify, transition, enqueue | 0.7d | T-054 |
-| T-056 | Order state machine + append-only `OrderEvent`                             | 0.5d | T-054 |
-| T-057 | Reconciliation job: poll Razorpay for orders pending > 2 min               | 0.4d | T-055 |
+| ID    | Task                                                                          | Est  | D:    |
+| ----- | ----------------------------------------------------------------------------- | ---- | ----- |
+| T-054 | ✅ `WebhookEvent` idempotency table + guard, per [05 §3](./05-lld.md)         | 0.4d | T-018 |
+| T-055 | ✅ `POST /webhooks/razorpay` — raw-body signature verify, transition, enqueue | 0.7d | T-054 |
+| T-056 | ✅ Order state machine + append-only `OrderEvent`                             | 0.5d | T-054 |
+| T-057 | ✅ Reconciliation job: poll Razorpay for orders pending > 2 min               | 0.4d | T-055 |
 
 **done:** firing each webhook **twice** changes state exactly once — watched failing before being trusted.
 

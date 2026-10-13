@@ -165,12 +165,25 @@ GET   /admin/trends                    radar board
 POST  /admin/trends/:id/promote        trend → draft drop, carrying its evidence
 ```
 
-Webhooks, signature-verified, never authenticated by session:
+Orders and payments — **built (T-050–T-057)**:
 
 ```
-POST  /webhooks/razorpay
-POST  /webhooks/printrove
+POST  /orders                          place: re-prices, re-checks stock + edition, snapshots, hands off
+POST  /orders/:reference/verify        the payment sheet's success report; trusted only if signed
+GET   /orders/:reference?t=            the order, behind a signed single-order token
+POST  /dev/fake-payments/:id/pay       PAYMENTS=fake only — never registered otherwise
 ```
+
+Webhooks, signature-verified over the raw body, never authenticated by session:
+
+```
+POST  /webhooks/razorpay               (or /webhooks/fake locally) — built
+POST  /webhooks/printrove              not yet — T-061
+```
+
+Payments sit behind a `PaymentProvider` port (`apps/api/src/modules/payments`) — `RazorpayProvider` and a
+`FakeProvider` that signs exactly as Razorpay does. `orders.razorpay_order_id` holds whichever provider's
+order id is configured; the column name predates the port.
 
 ## 3. Webhook contract
 

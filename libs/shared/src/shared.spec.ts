@@ -110,3 +110,53 @@ describe('client-safe formatting', () => {
     expect(src).not.toMatch(/^import /m);
   });
 });
+
+import { Address, IndianMobile, PlaceOrder, priceOrder } from './index.js';
+
+describe('checkout', () => {
+  it('prices with free shipping over ₹999 and GST shown, not added', () => {
+    expect(priceOrder(79900, 'PREPAID')).toEqual({
+      subtotalPaise: 79900,
+      shippingPaise: 8000,
+      taxPaise: 3805,
+      totalPaise: 87900,
+    });
+    expect(priceOrder(159800, 'PREPAID').shippingPaise).toBe(0);
+    expect(priceOrder(159800, 'PREPAID').totalPaise).toBe(159800);
+  });
+  it('adds the COD fee on top of shipping', () => {
+    expect(priceOrder(79900, 'COD').shippingPaise).toBe(16000);
+    expect(priceOrder(159800, 'COD').shippingPaise).toBe(8000);
+  });
+  it('normalises Indian mobiles and refuses landlines and short numbers', () => {
+    expect(IndianMobile.parse('98450 12345')).toBe('+919845012345');
+    expect(IndianMobile.parse('+91-98450-12345')).toBe('+919845012345');
+    expect(IndianMobile.parse('09845012345')).toBe('+919845012345');
+    expect(() => IndianMobile.parse('2345678901')).toThrow();
+    expect(() => IndianMobile.parse('98450')).toThrow();
+  });
+  it('validates PIN codes and states', () => {
+    const ok = {
+      name: 'Ananya R',
+      line1: '12 MG Road',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      pincode: '560001',
+    };
+    expect(Address.safeParse(ok).success).toBe(true);
+    expect(Address.safeParse({ ...ok, pincode: '060001' }).success).toBe(false);
+    expect(Address.safeParse({ ...ok, pincode: '56001' }).success).toBe(false);
+    expect(Address.safeParse({ ...ok, state: 'Atlantis' }).success).toBe(false);
+  });
+  it('rejects an order with no cart id or a bad email', () => {
+    expect(
+      PlaceOrder.safeParse({
+        cartId: 'x',
+        email: 'a@b.co',
+        phone: '9845012345',
+        address: {},
+        pay: 'PREPAID',
+      }).success,
+    ).toBe(false);
+  });
+});

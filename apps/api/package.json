@@ -42,8 +42,7 @@
     }
   },
   "devDependencies": {
-    "@nestjs/testing": "^11",
-    "fastify": "5.11.3"
+    "@nestjs/testing": "^11"
   },
   "dependencies": {
     "@nestjs/common": "^11",
@@ -52,6 +51,7 @@
     "@nowcore/db": "workspace:^",
     "@nowcore/shared": "workspace:^",
     "@prisma/adapter-pg": "7.10.0",
+    "fastify": "5.11.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "tslib": "^2.3.0",

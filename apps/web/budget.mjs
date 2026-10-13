@@ -24,7 +24,13 @@ const DIST = process.env.NEXT_DIST_DIR ?? '.next-build';
 // undici refuses it with "bad port".
 const API_PORT = 4180;
 const WEB_PORT = 3180;
-const ROUTES = ['/', '/shop', '/product/mediocre-by-design-tee', '/cart'];
+const ROUTES = [
+  '/',
+  '/shop',
+  '/product/mediocre-by-design-tee',
+  '/cart',
+  '/checkout',
+];
 
 if (!existsSync(join(DIST, 'BUILD_ID'))) {
   console.error(`No build at ${DIST}. Run \`nx build web\` first.`);
@@ -82,9 +88,23 @@ try {
     /Ready/,
   );
 
+  // Checkout redirects without a cart, and a cart page with items loads more
+  // than an empty one. Measure both with a real cart, as a buyer arrives.
+  const api = `http://localhost:${API_PORT}`;
+  const cart = await (await fetch(`${api}/carts`, { method: 'POST' })).json();
+  await fetch(`${api}/carts/${cart.id}/items`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sku: 'NC-014-TEE-BLK-L', quantity: 1 }),
+  });
+  const headers = { cookie: `nc_cart=${cart.id}` };
+
   let worst = 0;
   for (const route of ROUTES) {
-    const res = await fetch(`http://localhost:${WEB_PORT}${route}`);
+    const res = await fetch(`http://localhost:${WEB_PORT}${route}`, {
+      headers,
+      redirect: 'manual',
+    });
     if (!res.ok) throw new Error(`${route} answered ${res.status}`);
     const tags = (await res.text()).match(/<script\b[^>]*>/g) ?? [];
     const scripts = [

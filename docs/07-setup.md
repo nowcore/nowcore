@@ -105,6 +105,9 @@ Entries get added the first time something costs more than ten minutes.
   boot with `SELECT 1`; do the same in any new process that owns a client.
 - **The hero shows a still and never turns** — the frames are not rendered. `pnpm frames`.
 - **`motion-check` says the browser is missing** — `pnpm exec playwright install chromium`.
+- **Checkout says "Test payments — no money moves"** — the API runs `PAYMENTS=fake` (the local default).
+  Set the three `RAZORPAY_*` variables and `PAYMENTS=razorpay` to take real test payments.
+- **Something else is on :4000** — on the reference machine it is `country_dairy`'s API. NOWCORE uses 4100.
 - **Force a tier to look at it** — append `?tier=full|reduced|static` to any URL.
 - **Next apps have no inferred `typecheck`** because their tsconfig sets `noEmit`. Each declares an
   explicit `tsc --noEmit` target in its `package.json` — keep it when adding an app.
