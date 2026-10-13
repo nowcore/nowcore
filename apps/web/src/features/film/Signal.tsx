@@ -32,8 +32,11 @@ export function Signal({ drop }: { drop: LiveDrop }) {
         <ChapterRail index={0} total={7} label="The signal" />
       </div>
 
-      <div className="relative mx-auto grid h-full max-w-[1280px] grid-cols-1 items-center gap-6 px-6 pt-24 pb-28 md:grid-cols-[1fr_minmax(0,380px)_1fr] md:px-16">
-        <div className="order-2 flex flex-col gap-5 md:order-1">
+      {/* Phone: garment then headline, sized in svh so the whole chapter fits
+          one screen and the stage can pin — the turn is the point of the hero,
+          and most buyers only ever see it at 390px. */}
+      <div className="relative mx-auto grid h-full max-w-[1280px] grid-cols-1 content-center items-center gap-4 px-5 pb-24 pt-20 md:grid-cols-[1fr_minmax(0,380px)_1fr] md:gap-6 md:px-16 md:pb-28 md:pt-24">
+        <div className="order-2 flex flex-col gap-3 md:order-1 md:gap-5">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-smoke">
             {dropLabel(drop.number)} — {drop.title}
           </p>
@@ -46,12 +49,16 @@ export function Signal({ drop }: { drop: LiveDrop }) {
               'font-serif italic text-[clamp(3rem,6.6vw,5.25rem)] -ml-[3px]',
             ]}
           />
-          <p className="max-w-[330px] leading-relaxed text-smoke">
+          <p className="max-w-[330px] text-[15px] leading-relaxed text-smoke md:text-base">
             Printed the day you order it. Gone in 72 hours. Never restocked.
+          </p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ghost md:hidden">
+            {drop.claimed} of {drop.editionSize} claimed ·{' '}
+            {formatInr(drop.pricePaise)}
           </p>
         </div>
 
-        <div className="order-1 mx-auto w-full max-w-[300px] md:order-2 md:max-w-[380px]">
+        <div className="order-1 mx-auto w-[min(300px,34svh)] md:order-2 md:w-full md:max-w-[380px]">
           <CanvasSequence
             frames={f.full}
             reducedFrames={f.reduced}
@@ -63,7 +70,7 @@ export function Signal({ drop }: { drop: LiveDrop }) {
           />
         </div>
 
-        <div className="order-3 flex flex-col items-start gap-3.5 md:items-end md:text-right">
+        <div className="order-3 hidden flex-col items-end gap-3.5 text-right md:flex">
           <Beat from={0.15} to={0.45}>
             <p className="font-serif italic text-[46px] leading-[1.05] text-paper-dim">
               Already
@@ -81,7 +88,7 @@ export function Signal({ drop }: { drop: LiveDrop }) {
         </div>
       </div>
 
-      <div className="absolute bottom-7 left-6 flex items-center gap-4 md:left-10">
+      <div className="absolute bottom-7 left-6 hidden items-center gap-4 md:left-10 md:flex">
         <span className="font-mono text-[11px] text-paper">00</span>
         <span aria-hidden="true" className="block h-px w-[92px] bg-steel">
           <span className="block h-px w-[22%] bg-accent" />

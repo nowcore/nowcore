@@ -7,7 +7,7 @@
  * never `next dev` — HMR and unminified React make the numbers meaningless.
  *
  * For each tier it loads the page on a throttled phone profile, scrolls the
- * first stage end to end, and records:
+ * whole page top to bottom, and records:
  *   - frame times from requestAnimationFrame while scrolling → fps at p95
  *   - LCP, CLS (PerformanceObserver, buffered)
  *   - long tasks over 50 ms during the scroll
@@ -68,10 +68,13 @@ async function measure(browser, tier) {
   const lcp = await page.evaluate(() => window.__nc.lcp);
   const before = await page.evaluate(() => window.__nc.longTasks.length);
 
-  // Scroll the first stage end to end in wheel steps, recording frame times.
+  // Scroll the whole page top to bottom, recording frame times — every stage,
+  // marquee and reveal, as a buyer reading the film would meet them.
   const frames = await page.evaluate(async () => {
-    const stage = document.querySelector('[data-stage]');
-    const travel = Math.max(0, stage.offsetHeight - window.innerHeight);
+    const travel = Math.max(
+      0,
+      document.documentElement.scrollHeight - window.innerHeight,
+    );
     const deltas = [];
     let last = performance.now();
     let running = true;
@@ -81,7 +84,7 @@ async function measure(browser, tier) {
       if (running) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-    const steps = 90;
+    const steps = Math.max(90, Math.round(travel / 120));
     for (let i = 1; i <= steps; i++) {
       window.scrollTo(0, (travel * i) / steps);
       await new Promise((r) => setTimeout(r, 1000 / 30));
@@ -95,6 +98,24 @@ async function measure(browser, tier) {
     cls: window.__nc.cls,
     longTasks: window.__nc.longTasks,
   }));
+  // A pinned stage is one screen with overflow hidden: content taller than
+  // that is content nobody can reach. ScrollStage unpins in that case; this
+  // proves it did, at the phone size where it happens.
+  const clipped = await page.evaluate(async () => {
+    const out = [];
+    for (const section of document.querySelectorAll('[data-stage]')) {
+      section.scrollIntoView({ behavior: 'instant' });
+      await new Promise((r) => setTimeout(r, 120));
+      const pin = section.querySelector('[data-stage-pin="sticky"]');
+      const content = section.querySelector('[data-stage-content]');
+      if (pin && content && content.scrollHeight > pin.clientHeight + 2)
+        out.push(section.id || 'stage');
+    }
+    return out;
+  });
+  const pinnedStages = await page.evaluate(
+    () => document.querySelectorAll('[data-stage-pin="sticky"]').length,
+  );
   const painted = await page.evaluate(() => {
     const c = document.querySelector('canvas');
     return c ? c.style.opacity === '1' : null;
@@ -119,6 +140,8 @@ async function measure(browser, tier) {
     worstLongTask: Math.max(0, ...scrollLong),
     canvas: painted,
     frameKB: frameBytes / 1024,
+    clipped,
+    pinnedStages,
   };
 }
 
@@ -140,11 +163,12 @@ for (const r of rows) {
   if (r.lcp > BUDGET.lcp) bad.push('LCP');
   if (r.cls > BUDGET.cls) bad.push('CLS');
   if (r.longTasks > BUDGET.longTasks) bad.push('long tasks');
+  if (r.clipped.length) bad.push(`clipped: ${r.clipped.join(', ')}`);
   if (bad.length) failed = true;
   console.log(
     `${r.tier.padEnd(9)} ${r.fpsP95.toFixed(0).padStart(4)}fps  ${(r.lcp / 1000).toFixed(2)}s   ${r.cls.toFixed(3)}   ` +
       `${String(r.longTasks).padStart(2)}${r.longTasks ? ` (max ${r.worstLongTask.toFixed(0)}ms)` : '          '}   ` +
-      `${String(r.canvas).padEnd(7)}  ${r.frameKB.toFixed(0)} KB${bad.length ? '   FAIL: ' + bad.join(', ') : ''}`,
+      `${String(r.canvas).padEnd(7)}  ${r.frameKB.toFixed(0).padStart(4)} KB   ${r.pinnedStages}${bad.length ? '   FAIL: ' + bad.join(', ') : ''}`,
   );
 }
 console.log(

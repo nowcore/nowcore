@@ -52,3 +52,66 @@ export function framesFor(drop: string, colour: string) {
     height: 992,
   };
 }
+
+/** Closed drops for the archive chapter, newest first. Mirrors the seed + canvas. */
+export interface ArchivedDrop {
+  number: number;
+  slug: string;
+  title: string;
+  closedOn: string;
+}
+
+export const archive: ArchivedDrop[] = [
+  {
+    number: 13,
+    slug: 'touch-grass-protocol',
+    title: 'Touch Grass Protocol',
+    closedOn: '2026-09-28',
+  },
+  {
+    number: 12,
+    slug: 'vibe-debugging',
+    title: 'Vibe Debugging',
+    closedOn: '2026-09-14',
+  },
+  {
+    number: 11,
+    slug: 'offline-maxxing',
+    title: 'Offline Maxxing',
+    closedOn: '2026-08-31',
+  },
+  {
+    number: 10,
+    slug: 'slow-web-society',
+    title: 'Slow Web Society',
+    closedOn: '2026-08-17',
+  },
+  {
+    number: 9,
+    slug: 'inbox-zero-is-fake',
+    title: 'Inbox Zero Is Fake',
+    closedOn: '2026-08-03',
+  },
+];
+
+/** What the radar is seeing. Replaced by the trends API (T-080). */
+export const trends = [
+  { source: 'RDT', term: 'mediocre by design', score: 98 },
+  { source: 'GT', term: 'touch grass', score: 91 },
+  { source: 'HN', term: 'vibe debugging', score: 84 },
+  { source: 'YT', term: 'desk setup 2026', score: 71 },
+  { source: 'RDT', term: 'offline maxxing', score: 66 },
+  { source: 'GT', term: 'slow web', score: 58 },
+  { source: 'HN', term: 'post-agentic', score: 47 },
+  { source: 'YT', term: 'analog revival', score: 39 },
+];
+
+/** Wall placeholders until UGC submission lands (T-090). */
+export const wall = [
+  '@arnvsh',
+  '@thedailyloop',
+  '@kbr.jpg',
+  '@noisefloor',
+  '@sreeja.exe',
+  '@lowfi.anand',
+];

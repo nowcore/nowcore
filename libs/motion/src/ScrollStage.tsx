@@ -21,6 +21,12 @@ import { createProgressStore } from './store.js';
  *
  * In the static tier the section collapses to one screen and nothing pins:
  * reduced motion means the page scrolls like a page.
+ *
+ * Content is never clipped. A pinned stage is exactly one screen with its
+ * overflow hidden, so a chapter taller than the viewport (three stacked cards
+ * on a phone) would lose its bottom with no way to reach it. When the content
+ * does not fit, the stage stops pinning and scrolls like a page instead —
+ * found at 500px wide, 13 Oct 2026.
  */
 export function ScrollStage({
   children,
@@ -39,8 +45,27 @@ export function ScrollStage({
 }) {
   const tier = useTier();
   const section = useRef<HTMLElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const [store] = useState(() => createProgressStore(0));
-  const pinned = tier !== 'static';
+  const [fits, setFits] = useState(true);
+  const pinned = tier !== 'static' && fits;
+
+  // Measured against the viewport, not the pinned box: the box is the
+  // viewport while pinned, and is content-sized once unpinned.
+  useEffect(() => {
+    const el = content.current;
+    if (!el || tier === 'static') return;
+    const check = () => setFits(el.scrollHeight <= window.innerHeight + 1);
+    check();
+    const ro =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(check);
+    ro?.observe(el);
+    window.addEventListener('resize', check);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', check);
+    };
+  }, [tier]);
 
   useEffect(() => {
     const el = section.current;
@@ -85,7 +110,13 @@ export function ScrollStage({
       data-stage
     >
       <div style={stageStyle} data-stage-pin={pinned ? 'sticky' : 'none'}>
-        <StageProvider value={store}>{children}</StageProvider>
+        <div
+          ref={content}
+          style={{ height: pinned ? '100%' : 'auto' }}
+          data-stage-content
+        >
+          <StageProvider value={store}>{children}</StageProvider>
+        </div>
       </div>
     </section>
   );

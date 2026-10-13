@@ -131,16 +131,16 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 ### E2.3 — Homepage (3d)
 
-| ID    | Task                                                         | Est  | D:    |
-| ----- | ------------------------------------------------------------ | ---- | ----- |
-| T-037 | ✅ Chapter 00 the signal — hero, pinned turntable, countdown | 0.6d | T-031 |
-| T-038 | Chapter 01 what's now — trend ticker                         | 0.3d | T-032 |
-| T-039 | Chapter 02 the drop — garment detail, specs, price, CTA      | 0.5d | T-031 |
-| T-040 | Chapter 03 the archive — desaturated, stamped                | 0.4d | T-032 |
-| T-041 | Chapter 04 the making — three beats                          | 0.3d | T-032 |
-| T-042 | Chapter 05 the wall — UGC grid                               | 0.3d | T-032 |
-| T-043 | Chapter 06 take it — CTA, waitlist, footer                   | 0.3d | T-032 |
-| T-044 | Nav, dock, mobile composition at 390px                       | 0.3d | T-037 |
+| ID    | Task                                                                                       | Est  | D:    |
+| ----- | ------------------------------------------------------------------------------------------ | ---- | ----- |
+| T-037 | ✅ Chapter 00 the signal — hero, pinned turntable, countdown                               | 0.6d | T-031 |
+| T-038 | ✅ Chapter 01 what's now — trend ticker                                                    | 0.3d | T-032 |
+| T-039 | ✅ Chapter 02 the drop — garment detail, specs, price, CTA                                 | 0.5d | T-031 |
+| T-040 | ✅ Chapter 03 the archive — desaturated, stamped                                           | 0.4d | T-032 |
+| T-041 | ✅ Chapter 04 the making — three beats                                                     | 0.3d | T-032 |
+| T-042 | ✅ Chapter 05 the wall — UGC grid                                                          | 0.3d | T-032 |
+| T-043 | ✅ Chapter 06 take it — CTA, waitlist, footer                                              | 0.3d | T-032 |
+| T-044 | 🟡 Nav, dock, mobile composition at 390px ✅ — `<MagneticCursor>` (from T-033) still to do | 0.3d | T-037 |
 
 **done:** `motion-check` passes on the homepage at all three tiers; every chapter works at 390px.
 

@@ -13,16 +13,17 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | --------------------------- | -------------------------------------------- |
 | Phase 0 — Design and decide | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks · signed off 13 Oct |
 | Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
-| **Phase 2 — The film**      | ▓▓▓▓▓░░░░░ 9 / 16 tasks · 2 🟡               |
+| **Phase 2 — The film**      | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
 | Phase 3 — Commerce          | ░░░░░░░░░░ 0 / 18 tasks                      |
 | Phase 4 — Admin             | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 5 — Trend radar       | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
-**Next up:** chapters 01–06 (T-038–T-043) on the primitives that now exist, then T-044 (mobile
-composition, `<MagneticCursor>`). The catalogue API (T-045) replaces `apps/web/src/lib/fixtures/live-drop.ts`
-— delete the fixture when it lands.
+**Next up:** Phase 3 — commerce. T-045 (catalogue API: `GET /drops/live`, `/drops/:slug`,
+`/products/:slug`) replaces `apps/web/src/lib/fixtures/live-drop.ts` — delete the fixture when it lands.
+Then the shop rail (T-046) and product page (T-047) on the same motion primitives. `<MagneticCursor>`
+(T-044) is the last open Phase 2 item and can ride along with either.
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
@@ -35,6 +36,63 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-13 — The whole film: chapters 01–06, phone composition, the clipping guard · T-038…T-044
+
+The homepage film is complete: seven chapters, three of them pinned stages, measured inside budget on a
+throttled phone for every tier.
+
+**What landed.**
+
+- **Chapters 01–06** (`apps/web/src/features/film/Chapters.tsx`): the radar ticker on `<Marquee>`; the drop
+  as a pinned stage turning the second colourway while specs and price arrive as beats; the archive,
+  desaturated and stamped; the making as a pinned stage with three beats in sequence; the wall; take-it
+  with the waitlist form, footer and ghosted wordmark. `ChapterHead` carries the two-line move.
+- **Phone composition** for the two turntable chapters, sized in `svh` so each fits one screen and pins.
+- **Header backdrop** fading from the void, so fixed chrome dims a headline instead of colliding with it.
+- **`ScrollStage` never clips.** If a stage's content is taller than the viewport it unpins and scrolls
+  like a page (ResizeObserver; re-pins if it fits again).
+- **`motion-check`** now scrolls the whole film, not one stage, and fails on any pinned stage that clips.
+
+**Decisions, with what was rejected.**
+
+- _Only three of seven chapters pinned._ The ticker, archive, wall and take-it read at a glance; pinning
+  them would make the film a chore on a phone. Rejected: pinning everything because the reference does.
+- _Unpin on overflow, over shrinking content to fit._ Shrinking text to keep a stage pinned trades
+  legibility for motion. The phone compositions are designed to fit; the guard is the safety net when one
+  does not.
+- _Redesign the hero for 390px, over letting the guard unpin it._ The turn is the point of the hero and
+  most buyers only see 390px; an unpinned hero on phones would quietly remove the product's signature.
+
+**Counts:** 8 projects, 52 tests. Initial route 128.4 KB gzipped (71%) — six chapters added 0.1 KB, being
+server components. Full-tier frames over the whole film: 840 KB (two colourways); reduced: 197 KB.
+
+**Watched failing before being trusted:**
+
+- **The clipping guard** — with the unpin disabled and a deliberately over-tall chapter, `motion-check`
+  exited 1: `FAIL: clipped: the-making` on full and reduced. With the guard on and the same tall chapter,
+  that stage unpinned (2 pinned instead of 3) and the check passed. Tall chapter then removed.
+- **Whole-film measurement** — `full 60fps · LCP 0.50s · CLS 0.000 · 0 long tasks · 3 pinned`,
+  `reduced 60fps · 0.39s · 0.000 · 0 · 3`, `static · 0.40s · 0.000 · 0 · 0` at 390×844, 4× CPU, Fast 4G.
+
+**Carried forward:**
+
+- **Found by accident, at 500px:** the header collision and the clipped stage. Both are now guarded, but
+  they were found because a browser window happened to shrink — real-device testing is overdue.
+- **The waitlist form posts to `/api/waitlist`, which does not exist yet** (FR-8, T-089). It will 404 if
+  submitted. Not hidden, because the form is the design; wire it before anyone outside the team sees it.
+- **Archive cards reuse drop 013's still** for drops 012–009, which have no seed frames. Placeholder.
+- **840 KB of frames on the full tier** across two turning chapters. Within per-colourway budgets, but
+  the page-level total is not budgeted anywhere. Consider a page budget when the shop and product pages
+  add more.
+- Chrome cannot size a window below 500px wide; the 390px check is the scripted one, not by eye.
+
+**Verified:** full workspace check uncached; `motion-check` on the whole film, all tiers, seen failing;
+the film by eye at 1440×900 and 500×656.
+
+**Not verified:** a real phone; Safari/WebKit; anything after the waitlist submit.
 
 ---
 
