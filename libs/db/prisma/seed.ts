@@ -82,14 +82,23 @@ async function drop(input: {
         color: c.code,
         size,
       });
+      // Set on both branches, from one object. They were written separately
+      // once, and only `update` got the frame and printer fields: an existing
+      // database looked right while a fresh one seeded blank turntables and
+      // unprintable variants (found 13 Oct 2026; db:seed on a reset DB).
+      const derived = {
+        soldOut: input.soldOut.includes(size),
+        sequenceUrl: `/frames/${input.slug}/${c.code.toLowerCase()}`,
+        mockupUrl: `/frames/${input.slug}/${c.code.toLowerCase()}/still.avif`,
+        // The sandbox printer's id. Real ids come from the Printrove variant
+        // mapping (T-067); an unmapped variant cannot be printed.
+        podVariantId: `sbx_${sku}`,
+      };
       await db.variant.upsert({
         where: { sku },
-        update: {
-          soldOut: input.soldOut.includes(size),
-          sequenceUrl: `/frames/${input.slug}/${c.code.toLowerCase()}`,
-          mockupUrl: `/frames/${input.slug}/${c.code.toLowerCase()}/still.avif`,
-        },
+        update: derived,
         create: {
+          ...derived,
           productId: p.id,
           size,
           colorName: c.name,
@@ -98,7 +107,6 @@ async function drop(input: {
           pricePaise: rupees(
             size.startsWith('2') || size.startsWith('3') ? 849 : 799,
           ),
-          soldOut: input.soldOut.includes(size),
         },
       });
     }

@@ -80,7 +80,9 @@ nowcore/
 │   ├── ui/           @nowcore/ui      tokens, primitives, shadcn base
 │   ├── motion/       @nowcore/motion  ScrollStage, CanvasSequence, TextReveal, ChapterRail,
 │   │                                  Marquee, Grain, MagneticCursor, Curtain, tiers
-│   └── pod/          @nowcore/pod     PodProvider port + printrove/ adapter + webhook verify
+│   ├── pod/          @nowcore/pod     PodProvider port + SandboxPrinter (Printrove adapter: T-059)
+│   └── orders/       @nowcore/orders  the guarded order transition + signed order tokens,
+│                                      shared by api (payments, printer webhooks) and worker
 ├── infra/            docker-compose: Postgres 16 :5433 + Redis 7 :6381
 ├── tools/            scaffold-lib.sh · compose.sh · eslint/no-raw-design-values.mjs
 └── docs/             01…11 + adr/

@@ -21,7 +21,7 @@ import {
   type PaymentProvider,
 } from '../payments/payment-provider.js';
 import { OrderStateService } from './order-state.service.js';
-import { orderToken, validOrderToken } from './order-token.js';
+import { orderToken, validOrderToken } from '@nowcore/orders';
 
 const CLAIMED = [
   'PAID',

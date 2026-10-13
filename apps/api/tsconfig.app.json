@@ -15,6 +15,12 @@
       "path": "../../libs/shared/tsconfig.lib.json"
     },
     {
+      "path": "../../libs/pod/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/orders/tsconfig.lib.json"
+    },
+    {
       "path": "../../libs/db/tsconfig.lib.json"
     }
   ],

@@ -14,22 +14,27 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 0 — Design and decide | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks · signed off 13 Oct |
 | Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
 | Phase 2 — The film          | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
-| **Phase 3 — Commerce**      | ▓▓▓▓▓▓▓░░░ 12 / 18 tasks · 1 🟡              |
+| **Phase 3 — Commerce**      | ▓▓▓▓▓▓▓▓▓░ 15 / 18 tasks · 2 🟡 · 1 blocked  |
 | Phase 4 — Admin             | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 5 — Trend radar       | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
-**Next up:** fulfilment (T-058–T-062) — `libs/pod` with the `PodProvider` port and a sandbox printer, the
-`pod.submit` job, printer webhooks, buyer notifications. The Printrove adapter waits on their API docs and
-credentials; the Razorpay adapter waits on test keys.
+**Next up:** Phase 3 is done except what needs outside credentials. Phase 4 — the admin panel (T-063 on):
+operator sign-in, drop authoring, the variant → printer mapping UI and the publish check (T-067, T-068), and
+the live order board (T-069) — which is also where FULFILMENT_FAILED alerts finally reach a person.
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
 numbers, not opinions.
 
-**Needs from the operator:** Razorpay **test** keys (key id, key secret, webhook secret) to run T-052
-against Razorpay itself. Until then checkout runs on the fake provider, which signs exactly as Razorpay does.
+**Needs from the operator** — none block local work; each unblocks one adapter:
+
+- **Razorpay test keys** (key id, key secret, webhook secret) → T-052 against Razorpay itself.
+- **Printrove API docs + sandbox credentials** → T-059. The adapter is not started on purpose; it will not
+  be written from memory.
+- **A Resend (or other) API key** and a sending domain → real buyer emails (T-062).
+- **A mid-tier Android phone** for the Phase 2 gate, measured on hardware.
 
 **Needs a decision:** none blocking. Operator decided 13 Oct: **local Postgres only for now** — the
 hosted Supabase project (T-017) and the GitHub remote (T-015) come later and will be shared then. All
@@ -38,6 +43,76 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-13 — Fulfilment: the printer port, the worker, printer webhooks, emails · T-058…T-062
+
+A paid order now reaches the printer and comes back as a tracking number without a person touching it.
+Run live with all three processes: NC-10427 (two moss tees, free shipping) went PAID → PRINTING (worker) →
+SHIPPED → DELIVERED, with the confirmation and shipped emails in the worker log.
+
+**What landed.**
+
+- **`libs/pod`** — the `PodProvider` port (idempotent on our order reference), `PodRejected` for permanent
+  failures, `unmapped()` for the publish check, and `SandboxPrinter`: stateless (the worker submits, the API
+  receives webhooks — two processes), refuses variants it does not stock, signs its webhooks.
+- **`libs/orders`** — the guarded transition and `markPaid`, moved out of the API so the worker uses the same
+  code; signed order tokens moved here so emails carry links the API accepts.
+- **API**: paying an order enqueues `pod.submit` and a confirmation email (job ids from the order id, so
+  repeated enqueues collapse); printer webhooks at `/webhooks/pod/:provider` (signature, dedup, guarded
+  transition, tracking URL saved, shipped email); a dev press route that goes through the real signed path;
+  reconciliation now also re-enqueues paid orders stranded for 10 minutes. The API refuses `POD=sandbox` in
+  production.
+- **Worker**: its own Prisma connection (boot proves the database); `pod.submit` (PAID → FULFILMENT_QUEUED →
+  submit → PRINTING; unmapped or refused → FULFILMENT_FAILED with no retry; transient → backoff, ~17 h, then
+  FULFILMENT_FAILED); `notify` with a `Mailer` port — console locally, Resend adapter for production.
+- **Seed** maps every variant to a sandbox printer id.
+- **Order page** progress reaches all four steps and links to tracking.
+
+**Decisions, with what was rejected.**
+
+- _A stateless sandbox, over an in-memory fake printer._ The first version kept orders in a Map; it could not
+  work across the worker and the API. Making the printer's id a pure function of our reference also _is_ the
+  idempotency guarantee.
+- _The worker owns PAID → FULFILMENT_QUEUED, over the API transitioning after enqueueing._ The API enqueues
+  only; whoever processes the job moves the order. No window where an order says "queued" with no job.
+- _Unmapped variants fail permanently, over retrying._ Retrying cannot map a variant; seventeen hours of
+  backoff would only delay the operator finding out.
+- _No Printrove adapter, over writing one from memory._ An adapter guessed from memory would pass its own tests
+  and fail on the first real order — the worst place to discover it.
+
+**Counts:** 10 projects, 88 tests (API 25, worker 13, pod 4). Initial routes 72–73%. Motion unchanged:
+full 60 fps · LCP 0.58 s · CLS 0, reduced 60 fps · 0.40 s, static 0.40 s.
+
+**Watched failing before being trusted:**
+
+- **Unmapped variant** — a paid order for an XL with no printer id went straight to FULFILMENT_FAILED with the
+  SKU in the event payload, and the job did not retry.
+- **Idempotent submission** — the same order through `pod.submit` twice: one printer id, one PRINTING event.
+- **Printer webhooks** — wrong signature → 401, order untouched; SHIPPED delivered twice → one transition;
+  DELIVERED for an order that never shipped → refused by the state machine.
+- **The seed only seeded half a variant.** The `create` branch set no frame location and no printer id — only
+  `update` did — so every existing local database looked right and every fresh one would have had blank
+  turntables and unprintable orders. Found because a sed matched once instead of twice; fixed by building both
+  branches from one object, proven on a reset database (0 of 56 unmapped).
+- **A live worker changed a test's world** — the edition test counted only PAID orders while the running worker
+  moved them on to PRINTING. The test now counts every claimed status, as the service does.
+
+**Carried forward:**
+
+- **T-059 Printrove — blocked** on their API docs and credentials. Also unknown: whether Printrove honours an
+  idempotency key on order creation. If not, the adapter must look up by our reference before creating.
+- **Real emails** need a provider key; Resend's adapter has never sent one. No "delivered" email yet.
+- **FULFILMENT_FAILED reaches only the log.** The admin order board (T-069) and Sentry (T-095) are where an
+  operator will actually see it.
+- **Reconciliation still lives in the API.** The worker now has a database; moving it is a small follow-up.
+- `infra:reset` was run to prove the seed — local orders from earlier browser runs are gone (NC-10491).
+
+**Verified:** full uncached check; live pipeline with API + worker + web; the order page in Chrome after
+delivery; motion-check on the data-driven film.
+
+**Not verified:** Printrove, Razorpay, Resend — none have credentials; a real phone; WebKit.
 
 ---
 

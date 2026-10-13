@@ -11,6 +11,7 @@ import {
   PAYMENT_PROVIDER,
   type PaymentProvider,
 } from '../payments/payment-provider.js';
+import { FulfilmentQueue } from '../fulfilment/fulfilment.queue.js';
 import { OrderStateService } from './order-state.service.js';
 
 /**
@@ -30,6 +31,7 @@ export class ReconcileService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly db: PrismaService,
     private readonly state: OrderStateService,
+    private readonly queue: FulfilmentQueue,
     @Inject(PAYMENT_PROVIDER) private readonly payments: PaymentProvider,
     @Inject(ENV) private readonly env: Env,
   ) {}
@@ -77,6 +79,22 @@ export class ReconcileService implements OnModuleInit, OnModuleDestroy {
     }
     if (fixed)
       this.log.warn(`marked ${fixed} order(s) paid that no webhook confirmed`);
+
+    // Paid but never handed to the printer — the enqueue failed, or Redis was
+    // down when payment landed. Re-enqueueing is safe: the job id is the order.
+    const stranded = await this.db.order.findMany({
+      where: {
+        status: 'PAID',
+        podOrderId: null,
+        createdAt: { lt: new Date(now.getTime() - 10 * 60_000) },
+      },
+      take: 100,
+    });
+    for (const order of stranded) await this.queue.submit(order.id);
+    if (stranded.length)
+      this.log.warn(
+        `re-enqueued ${stranded.length} paid order(s) for the printer`,
+      );
     return fixed;
   }
 }

@@ -75,7 +75,10 @@ export default async function OrderPage({
             <p className="text-smoke">
               {/* No promise of an email until emails exist (T-062). */}
               {LABEL[order.status]} for {order.email}. Keep this link — it is
-              how you track the order. Printed to order, ships in 3–5 days.
+              how you track the order.
+              {['PAID', 'FULFILMENT_QUEUED', 'PRINTING'].includes(
+                order.status,
+              ) && ' Printed to order, ships in 3–5 days.'}
             </p>
           )}
         </div>

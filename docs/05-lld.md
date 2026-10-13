@@ -178,7 +178,8 @@ Webhooks, signature-verified over the raw body, never authenticated by session:
 
 ```
 POST  /webhooks/razorpay               (or /webhooks/fake locally) — built
-POST  /webhooks/printrove              not yet — T-061
+POST  /webhooks/pod/:provider          printer status — built against the sandbox (T-061)
+POST  /dev/pod/:reference/advance      POD=sandbox only — plays the press through the real signed path
 ```
 
 Payments sit behind a `PaymentProvider` port (`apps/api/src/modules/payments`) — `RazorpayProvider` and a

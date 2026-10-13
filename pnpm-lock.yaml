@@ -156,12 +156,21 @@ importers:
       '@nowcore/db':
         specifier: workspace:^
         version: link:../../libs/db
+      '@nowcore/orders':
+        specifier: workspace:^
+        version: link:../../libs/orders
+      '@nowcore/pod':
+        specifier: workspace:^
+        version: link:../../libs/pod
       '@nowcore/shared':
         specifier: workspace:^
         version: link:../../libs/shared
       '@prisma/adapter-pg':
         specifier: 7.10.0
         version: 7.10.0
+      bullmq:
+        specifier: ^5
+        version: 5.81.5
       fastify:
         specifier: 5.11.3
         version: 5.11.3
@@ -230,6 +239,21 @@ importers:
       '@nestjs/core':
         specifier: ^11
         version: 11.2.7(@nestjs/common@11.2.7(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nowcore/db':
+        specifier: workspace:^
+        version: link:../../libs/db
+      '@nowcore/orders':
+        specifier: workspace:^
+        version: link:../../libs/orders
+      '@nowcore/pod':
+        specifier: workspace:^
+        version: link:../../libs/pod
+      '@nowcore/shared':
+        specifier: workspace:^
+        version: link:../../libs/shared
+      '@prisma/adapter-pg':
+        specifier: 7.10.0
+        version: 7.10.0
       bullmq:
         specifier: ^5
         version: 5.81.5
@@ -293,6 +317,27 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
+
+  libs/orders:
+    dependencies:
+      '@nowcore/db':
+        specifier: workspace:^
+        version: link:../db
+      '@nowcore/shared':
+        specifier: workspace:^
+        version: link:../shared
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
+  libs/pod:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   libs/shared:
     dependencies:

@@ -184,13 +184,13 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 ### E3.4 — Fulfilment (3d)
 
-| ID    | Task                                                                | Est  | D:           |
-| ----- | ------------------------------------------------------------------- | ---- | ------------ |
-| T-058 | `libs/pod` — `PodProvider` port + zod contracts                     | 0.5d | T-016        |
-| T-059 | Printrove adapter: catalogue, variant map, create order, cancel     | 1d   | T-058        |
-| T-060 | `pod.submit` job with backoff, 24h retry, then operator alert       | 0.6d | T-059, T-026 |
-| T-061 | `POST /webhooks/printrove` — printing/shipped/delivered/RTO         | 0.6d | T-054, T-059 |
-| T-062 | Buyer notifications: order placed, shipped with tracking, delivered | 0.3d | T-061        |
+| ID    | Task                                                                                                                                                            | Est  | D:           |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------ |
+| T-058 | ✅ `libs/pod` — `PodProvider` port + zod contracts                                                                                                              | 0.5d | T-016        |
+| T-059 | Printrove adapter: catalogue, variant map, create order, cancel                                                                                                 | 1d   | T-058        |
+| T-060 | ✅ `pod.submit` job with backoff, 24h retry, then operator alert                                                                                                | 0.6d | T-059, T-026 |
+| T-061 | ✅ `POST /webhooks/printrove` — printing/shipped/delivered/RTO                                                                                                  | 0.6d | T-054, T-059 |
+| T-062 | 🟡 Buyer notifications: confirmed, shipped with tracking ✅ (console mailer locally); Resend adapter written, never run — needs a key; delivered email not sent | 0.3d | T-061        |
 
 **done:** a sandbox order round-trips to a tracking number without a human touching it.
 

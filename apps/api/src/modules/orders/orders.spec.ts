@@ -314,7 +314,20 @@ describe('orders', () => {
       _sum: { quantity: true },
       where: {
         skuSnap: { startsWith: tag },
-        order: { status: { in: ['PAID'] } },
+        // Every claimed status, not just PAID: a running worker moves paid
+        // orders on to FULFILMENT_QUEUED and PRINTING while this suite runs.
+        order: {
+          status: {
+            in: [
+              'PAID',
+              'FULFILMENT_QUEUED',
+              'FULFILMENT_FAILED',
+              'PRINTING',
+              'SHIPPED',
+              'DELIVERED',
+            ],
+          },
+        },
       },
     });
     await db.drop.update({

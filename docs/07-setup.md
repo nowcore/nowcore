@@ -108,6 +108,10 @@ Entries get added the first time something costs more than ten minutes.
 - **Checkout says "Test payments — no money moves"** — the API runs `PAYMENTS=fake` (the local default).
   Set the three `RAZORPAY_*` variables and `PAYMENTS=razorpay` to take real test payments.
 - **Something else is on :4000** — on the reference machine it is `country_dairy`'s API. NOWCORE uses 4100.
+- **An order sits at PAID** — the worker is not running (`pnpm dev` starts it). The reconciliation sweep
+  re-enqueues paid orders stranded for 10 minutes.
+- **Play the printer locally** — `curl -X POST localhost:4100/dev/pod/NC-10427/advance` moves an order
+  PRINTING → SHIPPED → DELIVERED through the real signed webhook path.
 - **Force a tier to look at it** — append `?tier=full|reduced|static` to any URL.
 - **Next apps have no inferred `typecheck`** because their tsconfig sets `noEmit`. Each declares an
   explicit `tsc --noEmit` target in its `package.json` — keep it when adding an app.

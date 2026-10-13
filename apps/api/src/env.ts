@@ -51,6 +51,20 @@ const Env = z
       .min(32)
       .default('local-dev-order-token-secret-change-me-0000'),
 
+    /** The fulfilment queue lives here; the worker consumes it. */
+    REDIS_URL: z
+      .url({ protocol: /^rediss?$/ })
+      .default('redis://127.0.0.1:6381'),
+
+    /**
+     * Which printer fulfils orders. Only `sandbox` exists until the Printrove
+     * adapter is written against their docs; it is refused in production.
+     */
+    POD: z.enum(['sandbox']).default('sandbox'),
+    POD_SANDBOX_SECRET: z
+      .string()
+      .default('pod-sandbox-secret-for-local-dev-only'),
+
     /** Poll the provider for orders a webhook never confirmed (T-057). Off in tests. */
     RECONCILE: z.enum(['on', 'off']).default('on'),
   })
@@ -75,6 +89,13 @@ const Env = z
           code: 'custom',
           path: ['PAYMENTS'],
           message: 'the fake provider can never run in production',
+        });
+      }
+      if (env.POD === 'sandbox') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['POD'],
+          message: 'the sandbox printer can never fulfil real orders',
         });
       }
       if (env.ORDER_TOKEN_SECRET.startsWith('local-dev-')) {

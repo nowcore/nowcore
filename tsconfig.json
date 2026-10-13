@@ -26,6 +26,12 @@
     },
     {
       "path": "./libs/motion"
+    },
+    {
+      "path": "./libs/pod"
+    },
+    {
+      "path": "./libs/orders"
     }
   ],
   "compilerOptions": {}

@@ -1,74 +1,34 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@nowcore/db';
-import {
-  canTransition,
-  type OrderStatus,
-  type PaymentMethod,
-} from '@nowcore/shared';
+import { markPaid } from '@nowcore/orders';
+import type { PaymentMethod } from '@nowcore/shared';
 import { PrismaService } from '../../prisma.service.js';
+import { FulfilmentQueue } from '../fulfilment/fulfilment.queue.js';
 
 /**
- * The only way an order changes status (docs/05 §4).
- *
- * Every transition is a conditional update — `WHERE id = ? AND status = from`
- * — so two writers racing for the same transition (the browser's payment
- * confirmation and Razorpay's webhook land within milliseconds of each other)
- * cannot both succeed. Exactly one updates a row; the other sees zero and
- * does nothing. The OrderEvent is written in the same transaction, so the
- * history and the status can never disagree.
+ * The API's door into the shared order transitions (libs/orders). Paying an
+ * order hands it to the printer queue and the confirmation email — and only
+ * the caller that actually moved it does, so a racing webhook and verify
+ * enqueue once (and the queue's job ids make even that redundant).
  */
 @Injectable()
 export class OrderStateService {
-  private readonly log = new Logger('orders');
+  constructor(
+    private readonly db: PrismaService,
+    private readonly queue: FulfilmentQueue,
+  ) {}
 
-  constructor(private readonly db: PrismaService) {}
-
-  async transition(
-    orderId: string,
-    from: OrderStatus,
-    to: OrderStatus,
-    source: string,
-    payload: Prisma.InputJsonValue,
-    extra: Prisma.OrderUpdateManyMutationInput = {},
-  ): Promise<boolean> {
-    if (!canTransition(from, to)) {
-      this.log.warn(`refused ${from} → ${to} for ${orderId} (${source})`);
-      return false;
-    }
-    return this.db.$transaction(async (tx) => {
-      const { count } = await tx.order.updateMany({
-        where: { id: orderId, status: from },
-        data: { ...extra, status: to },
-      });
-      if (count === 0) return false;
-      await tx.orderEvent.create({
-        data: { orderId, from, to, source, payload },
-      });
-      return true;
-    });
-  }
-
-  /**
-   * Payment landed. Idempotent: a second caller finds the order no longer
-   * PENDING and returns false. The cart empties only now — a failed payment
-   * leaves it intact for another try.
-   */
   async markPaid(
     order: { id: string; cartId: string | null },
     source: string,
     payload: Prisma.InputJsonValue,
     method: PaymentMethod | null,
   ): Promise<boolean> {
-    const moved = await this.transition(
-      order.id,
-      'PENDING',
-      'PAID',
-      source,
-      payload,
-      method ? { method } : {},
-    );
-    if (moved && order.cartId)
-      await this.db.cartItem.deleteMany({ where: { cartId: order.cartId } });
+    const moved = await markPaid(this.db, order, source, payload, method);
+    if (moved) {
+      await this.queue.submit(order.id);
+      await this.queue.tell(order.id, 'confirmed');
+    }
     return moved;
   }
 }
