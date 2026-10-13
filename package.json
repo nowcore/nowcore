@@ -24,7 +24,9 @@
     "infra:down": "tools/compose.sh down",
     "infra:reset": "tools/compose.sh down -v && pnpm infra:up",
     "db:migrate": "nx run db:migrate",
-    "db:seed": "nx run db:seed"
+    "db:seed": "nx run db:seed",
+    "motion-check": "node tools/motion-check.mjs",
+    "frames": "nx run worker:render-seed"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

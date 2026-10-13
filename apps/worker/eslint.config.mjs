@@ -25,6 +25,12 @@ export default [
     },
   },
   {
+    // The renderer produces pixels from garment colours that are data (a
+    // variant's colour_hex), not UI styling — the raw-colour rule is for apps.
+    files: ['src/render/**'],
+    rules: { 'nowcore/no-raw-design-values': 'off' },
+  },
+  {
     ignores: ['**/out-tsc', '**/test-output'],
   },
 ];

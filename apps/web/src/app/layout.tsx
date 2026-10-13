@@ -1,6 +1,8 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { DropTheme, SIGNAL } from '@nowcore/ui';
+import { Grain, MotionProvider, SmoothScroll } from '@nowcore/motion';
+import { DropTheme } from '@nowcore/ui';
+import { liveDrop } from '../lib/fixtures/live-drop';
 import { fontVariables } from './fonts';
 import './global.css';
 
@@ -10,12 +12,18 @@ export const metadata: Metadata = {
     'Trend-driven drops. 72 hours, printed to order, never restocked.',
 };
 
+export const viewport: Viewport = { themeColor: 'black', colorScheme: 'dark' };
+
 export default function RootLayout({ children }: { children: ReactNode }) {
-  // The live drop's accent replaces SIGNAL once the catalogue API lands (T-045).
   return (
     <html lang="en" className={fontVariables}>
-      <DropTheme as="body" accent={SIGNAL}>
-        {children}
+      {/* The live drop's accent re-tints every surface (CLAUDE.md, rule 1). */}
+      <DropTheme as="body" accent={liveDrop.accent}>
+        <MotionProvider>
+          <SmoothScroll />
+          <Grain />
+          {children}
+        </MotionProvider>
       </DropTheme>
     </html>
   );

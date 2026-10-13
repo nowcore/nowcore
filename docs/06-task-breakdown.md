@@ -109,38 +109,38 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 ### E2.1 — Motion core (4d)
 
-| ID    | Task                                                                                    | Est  | D:    |
-| ----- | --------------------------------------------------------------------------------------- | ---- | ----- |
-| T-029 | `libs/motion` scaffold + tier detection (reduced-motion, effectiveType, saveData)       | 0.5d | T-027 |
-| T-030 | `<ScrollStage>` — sticky stage emitting normalised progress; Lenis + ScrollTrigger      | 1d   | T-029 |
-| T-031 | `<CanvasSequence>` — `createImageBitmap` off-thread, ±8 pre-warm, fallback frame as LCP | 1.5d | T-030 |
-| T-032 | `<TextReveal>`, `<ChapterRail>`, `<Marquee>`                                            | 0.6d | T-030 |
-| T-033 | `<Grain>`, `<MagneticCursor>`, `<Curtain>` (View Transitions)                           | 0.4d | T-030 |
+| ID    | Task                                                                                                                       | Est  | D:    |
+| ----- | -------------------------------------------------------------------------------------------------------------------------- | ---- | ----- |
+| T-029 | ✅ `libs/motion` scaffold + tier detection (reduced-motion, effectiveType, saveData)                                       | 0.5d | T-027 |
+| T-030 | ✅ `<ScrollStage>` — CSS-sticky stage emitting normalised progress; Lenis lazily on the full tier (no GSAP — ADR-002 rev.) | 1d   | T-029 |
+| T-031 | ✅ `<CanvasSequence>` — `createImageBitmap` off-thread, ±8 pre-warm, fallback frame as LCP                                 | 1.5d | T-030 |
+| T-032 | ✅ `<TextReveal>`, `<ChapterRail>`, `<Marquee>`                                                                            | 0.6d | T-030 |
+| T-033 | 🟡 `<Grain>` ✅, `<Curtain>` as a CSS cross-document view transition ✅, `<MagneticCursor>` deferred to T-044              | 0.4d | T-030 |
 
 **done:** each primitive has a Playwright visual baseline and behaves correctly in all three tiers.
 
 ### E2.2 — Turntable pipeline (2d)
 
-| ID    | Task                                                                           | Est  | D:           |
-| ----- | ------------------------------------------------------------------------------ | ---- | ------------ |
-| T-034 | `render.turntable` worker job: artwork + blank → 72 AVIF frames + fallback     | 1.2d | T-026, T-031 |
-| T-035 | Frames to Supabase Storage with cache headers; size budget asserted in the job | 0.4d | T-034        |
-| T-036 | Mobile frame set (24 frames) for the reduced tier                              | 0.4d | T-034        |
+| ID    | Task                                                                                                                                                          | Est  | D:           |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------ |
+| T-034 | ✅ `render.turntable` worker job: artwork + blank → 72 AVIF frames + fallback                                                                                 | 1.2d | T-026, T-031 |
+| T-035 | 🟡 Frames through a `FrameStore` port; size budget asserted in the job ✅. Supabase Storage binding waits on the hosted project — local filesystem until then | 0.4d | T-034        |
+| T-036 | ✅ Mobile frame set (24 frames) for the reduced tier                                                                                                          | 0.4d | T-034        |
 
 **done:** one artwork upload yields a working turntable with no manual step. **This is the task that, if skipped, costs a day per drop forever.**
 
 ### E2.3 — Homepage (3d)
 
-| ID    | Task                                                      | Est  | D:    |
-| ----- | --------------------------------------------------------- | ---- | ----- |
-| T-037 | Chapter 00 the signal — hero, pinned turntable, countdown | 0.6d | T-031 |
-| T-038 | Chapter 01 what's now — trend ticker                      | 0.3d | T-032 |
-| T-039 | Chapter 02 the drop — garment detail, specs, price, CTA   | 0.5d | T-031 |
-| T-040 | Chapter 03 the archive — desaturated, stamped             | 0.4d | T-032 |
-| T-041 | Chapter 04 the making — three beats                       | 0.3d | T-032 |
-| T-042 | Chapter 05 the wall — UGC grid                            | 0.3d | T-032 |
-| T-043 | Chapter 06 take it — CTA, waitlist, footer                | 0.3d | T-032 |
-| T-044 | Nav, dock, mobile composition at 390px                    | 0.3d | T-037 |
+| ID    | Task                                                         | Est  | D:    |
+| ----- | ------------------------------------------------------------ | ---- | ----- |
+| T-037 | ✅ Chapter 00 the signal — hero, pinned turntable, countdown | 0.6d | T-031 |
+| T-038 | Chapter 01 what's now — trend ticker                         | 0.3d | T-032 |
+| T-039 | Chapter 02 the drop — garment detail, specs, price, CTA      | 0.5d | T-031 |
+| T-040 | Chapter 03 the archive — desaturated, stamped                | 0.4d | T-032 |
+| T-041 | Chapter 04 the making — three beats                          | 0.3d | T-032 |
+| T-042 | Chapter 05 the wall — UGC grid                               | 0.3d | T-032 |
+| T-043 | Chapter 06 take it — CTA, waitlist, footer                   | 0.3d | T-032 |
+| T-044 | Nav, dock, mobile composition at 390px                       | 0.3d | T-037 |
 
 **done:** `motion-check` passes on the homepage at all three tiers; every chapter works at 390px.
 

@@ -7,6 +7,10 @@ import { z } from 'zod';
 const Env = z.object({
   /** Defaults to the Redis infra/docker-compose.yml publishes. */
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).default('redis://127.0.0.1:6381'),
+  /** Where rendered frames are written until Supabase Storage (T-035). */
+  FRAMES_DIR: z
+    .string()
+    .default(new URL('../../web/public/frames', import.meta.url).pathname),
 });
 export type Env = z.infer<typeof Env>;
 

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import '@nowcore/ui/tokens.css';
+@import '@nowcore/motion/motion.css';
 
 /* Tailwind scans the workspace libraries too, so classes used in libs/ui and
    libs/motion components are generated. */

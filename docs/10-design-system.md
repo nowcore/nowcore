@@ -70,7 +70,7 @@ through, never hidden) · persistent buy bar on product pages · grain + vignett
 | `<MagneticCursor>` | `pointer: fine` only                                                                             |
 | `<Curtain>`        | View Transitions API route wipe                                                                  |
 
-Runtime: Lenis + GSAP ScrollTrigger. Easing: enter `cubic-bezier(0.16,1,0.3,1)`, exit
+Runtime: CSS `position: sticky` + a `requestAnimationFrame` progress loop; Lenis smoothing loaded lazily on the full tier only (ADR-002, revised — no GSAP). Easing: enter `cubic-bezier(0.16,1,0.3,1)`, exit
 `(0.7,0,0.84,0)`, move `(0.65,0,0.35,1)`, scrub linear with 0.6s catch-up.
 
 ### Quality tiers

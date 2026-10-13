@@ -21,6 +21,7 @@ pnpm install
 pnpm infra:up                 # Postgres on :5433, Redis on :6381 — waits until healthy
 pnpm db:migrate               # applies libs/db/prisma/migrations
 pnpm db:seed                  # DROP 014 live, DROP 013 archived, 56 variants — idempotent
+pnpm frames                   # renders the seed turntables into apps/web/public/frames (~50s, gitignored)
 pnpm check                    # everything green before you touch anything
 pnpm dev                      # web :3000 · admin :3001 · api :4000 · worker
 ```
@@ -102,6 +103,9 @@ Entries get added the first time something costs more than ten minutes.
 - **"The workspace is out of sync"** — a project gained a workspace dependency. `pnpm exec nx sync`.
 - **Prisma 7's `$connect()` opens nothing** with a driver adapter. The API proves the database at
   boot with `SELECT 1`; do the same in any new process that owns a client.
+- **The hero shows a still and never turns** — the frames are not rendered. `pnpm frames`.
+- **`motion-check` says the browser is missing** — `pnpm exec playwright install chromium`.
+- **Force a tier to look at it** — append `?tier=full|reduced|static` to any URL.
 - **Next apps have no inferred `typecheck`** because their tsconfig sets `noEmit`. Each declares an
   explicit `tsc --noEmit` target in its `package.json` — keep it when adding an app.
 

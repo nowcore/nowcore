@@ -23,6 +23,9 @@
     },
     {
       "path": "./apps/web"
+    },
+    {
+      "path": "./libs/motion"
     }
   ],
   "compilerOptions": {}

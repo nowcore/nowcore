@@ -38,6 +38,16 @@
         "dependsOn": [
           "^build"
         ]
+      },
+      "render-seed": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node dist/render/seed-frames.js",
+          "cwd": "{projectRoot}"
+        }
       }
     }
   },
@@ -48,6 +58,7 @@
     "bullmq": "^5",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "sharp": "^0.34",
     "tslib": "^2.3.0",
     "zod": "4.4.3"
   },

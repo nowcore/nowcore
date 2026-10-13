@@ -1,0 +1,126 @@
+/*
+ * Styles for libs/motion. Imported once per app after the token sheet:
+ *   @import '@nowcore/motion/motion.css';
+ * Every value is a token from @nowcore/ui; nothing is written raw here.
+ */
+
+/* TextReveal */
+.nc-reveal-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.nc-reveal-inner {
+  display: inline-block;
+}
+[data-reveal='out'] .nc-reveal-inner {
+  transform: translateY(105%);
+  filter: blur(6px);
+  opacity: 0;
+}
+[data-reveal='in'] .nc-reveal-inner {
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--dur-slow) var(--ease-enter),
+    filter var(--dur-slow) var(--ease-enter),
+    opacity var(--dur-base) var(--ease-enter);
+}
+
+/* ChapterRail */
+.nc-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+}
+.nc-rail-index {
+  font-size: 11px;
+  color: var(--paper);
+}
+.nc-rail-total {
+  font-size: 9px;
+  color: var(--ghost);
+}
+.nc-rail-ticks {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 6px 0;
+}
+.nc-rail-tick {
+  display: block;
+  width: 1px;
+  height: 16px;
+  background: var(--steel);
+  transition: background var(--dur-base) var(--ease-move);
+}
+.nc-rail-tick[data-active] {
+  background: var(--drop-accent);
+}
+.nc-rail-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ghost);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  margin-top: 8px;
+}
+
+/* Marquee */
+.nc-marquee {
+  overflow: hidden;
+}
+.nc-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: nc-marquee linear infinite;
+}
+.nc-marquee:hover .nc-marquee-track {
+  animation-play-state: paused;
+}
+.nc-marquee-set {
+  display: flex;
+  flex-shrink: 0;
+}
+@keyframes nc-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Grain */
+.nc-grain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.05;
+  z-index: 50;
+  mix-blend-mode: overlay;
+}
+
+/* Static tier, and anyone who asked for reduced motion before hydration. */
+[data-motion-tier='static'] .nc-marquee-track {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nc-marquee-track {
+    animation: none;
+  }
+  [data-reveal] .nc-reveal-inner {
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+}
+
+/* Route changes: a cross-document view transition, native and free. */
+@view-transition {
+  navigation: auto;
+}

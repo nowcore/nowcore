@@ -60,6 +60,7 @@
     }
   },
   "dependencies": {
+    "@nowcore/motion": "workspace:^",
     "@nowcore/shared": "workspace:^",
     "@nowcore/ui": "workspace:^",
     "geist": "^1",

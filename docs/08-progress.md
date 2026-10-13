@@ -12,17 +12,17 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase                       | Progress                                     |
 | --------------------------- | -------------------------------------------- |
 | Phase 0 — Design and decide | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks · signed off 13 Oct |
-| **Phase 1 — Foundation**    | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
-| Phase 2 — The film          | ░░░░░░░░░░ 0 / 16 tasks                      |
+| Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
+| **Phase 2 — The film**      | ▓▓▓▓▓░░░░░ 9 / 16 tasks · 2 🟡               |
 | Phase 3 — Commerce          | ░░░░░░░░░░ 0 / 18 tasks                      |
 | Phase 4 — Admin             | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 5 — Trend radar       | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
-**Next up:** Phase 2 — the film. T-029 (`libs/motion` scaffold + tier detection), then T-030 and T-031
-(`<ScrollStage>`, `<CanvasSequence>`), which are the critical path. The Chrome DevTools MCP is installed
-in `.mcp.json` (13 Oct); it loads on the next Claude Code start, after the one-time project-server approval.
+**Next up:** chapters 01–06 (T-038–T-043) on the primitives that now exist, then T-044 (mobile
+composition, `<MagneticCursor>`). The catalogue API (T-045) replaces `apps/web/src/lib/fixtures/live-drop.ts`
+— delete the fixture when it lands.
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
@@ -35,6 +35,79 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-13 — The motion library, the turntable pipeline and chapter 00 · T-029…T-037
+
+The critical path of Phase 2 is done: `libs/motion` exists, turntables render themselves from artwork,
+and the hero scrubs a real 72-frame turn — measured inside every budget on a throttled phone profile.
+
+**What landed.**
+
+- **`libs/motion`** — tier detection (`prefers-reduced-motion` always wins; save-data, non-4G or <4 cores
+  → reduced), pure scroll maths (stage progress, frame index, nearest-first prewarm, beat segments), a
+  tiny observable store so scrubbing never re-renders React, and the primitives: `MotionProvider`,
+  `ScrollStage`, `CanvasSequence`, `TextReveal`, `ChapterRail`, `Marquee`, `Grain`, `SmoothScroll`, `Beat`.
+  `motion.css` uses tokens only. `?tier=` forces a tier for QA. 15 tests.
+- **The turntable pipeline** (`apps/worker/src/render`) — a parametric 2.5D turn from flat artwork:
+  silhouette narrows side-on, print foreshortens with cos θ and slides with sin θ, collar flips, highlight
+  crosses. `sharp` composites and encodes AVIF. Both sets per colourway: 72 × 800px and 24 × 480px.
+  Budgets asserted _before_ storing. `FrameStore` port with a local implementation. `RenderProcessor` on
+  its own queue, concurrency 1. `pnpm frames` renders the seed drops. 8 new tests.
+- **Chapter 00 — the signal** (`apps/web/src/features/film`) — 3.5-screen pinned stage, the turntable,
+  the two-line headline revealing, "Already fading" and edition/price arriving as beats, chapter rail,
+  glass nav, dock, live countdown, accent glow. Data from a fixture mirroring the seed until T-045.
+- **`tools/motion-check.mjs`** — the measured half of the `motion-check` skill, as a script.
+
+**Decisions, with what was rejected.**
+
+- _No GSAP._ ADR-002 named GSAP + ScrollTrigger; built, the pinning is CSS sticky (morphowater's own
+  technique) and progress is one division per frame. GSAP would have spent ~45 KB of the ~55 KB left.
+  Rejected keeping it "for future timelines" — a chapter that needs one can import it lazily. ADR-002 revised.
+- _A parametric 2.5D turn, over waiting for 3D models or photography._ Neither exists, and either would
+  cost a day per drop — the exact failure T-034 exists to prevent. The output contract (frames + still per
+  colourway, under budget) is what a better renderer would replace without touching the web app.
+- _A dedicated 24-frame mobile set, over thinning the 72._ Same arc; 94 KB instead of ~140 KB at 800px.
+- _Frames gitignored and regenerated (`pnpm frames`), over committing them._ They are build output —
+  3.4 MB of binaries per seed render.
+- _Scripted Playwright measurement, over waiting for the DevTools MCP in-session._ The MCP is installed
+  and loads on a fresh session; the script is repeatable and could gate CI. Both stay: script for numbers,
+  MCP traces for "why".
+- _A fixture for the live drop, over pulling T-045 forward._ A request-time fetch would make the page
+  dynamic, and the budget measures prerendered routes. The fixture has a narrow lint exception and a
+  deletion note.
+
+**Counts:** 8 projects, 52 tests. Initial route: 128.3 KB gzipped (71%) — the motion library added 3.7 KB.
+Per colourway: 387–394 KB desktop set, 80–83 KB mobile set, ~10 s to render both.
+
+**Watched failing before being trusted:**
+
+- **motion-check** — a 40 ms main-thread block per canvas draw took the full and reduced tiers to
+  **20 fps → FAIL**, plus 23 long tasks on reduced. Restored: `full 60fps · LCP 0.36s · CLS 0.000 ·
+0 long tasks`, `reduced 60fps · 0.36s · 0.000 · 0`, `static · 0.36s · 0.000 · 0`.
+- **The reduced-tier frame set** — removed the `reducedFrames` branch; the test asserting only `/m/`
+  URLs are fetched failed. Restored: passes. (It first failed for the wrong reason: jsdom has no canvas,
+  so the loader bailed before fetching — fixed with a stub 2D context, not by weakening the assertion.)
+- **Print visibility** — the render test reads pixels in the print area: bright face-on, dark from behind.
+- **`stageProgress(0, …)` returned `-0`**, which fails `Object.is(0)`. Clamp now uses `<=`.
+
+**Carried forward:**
+
+- **The 60 fps is simulated.** 4× CPU on an M-series laptop is not a ₹15,000 Android. The Phase 2 gate
+  still needs a real mid-tier device — an operator task, not a code task.
+- **The hero is built on a fixture.** `apps/web/src/lib/fixtures/live-drop.ts` goes when T-045 lands.
+- **T-035 🟡** — frames go to the local filesystem; the Supabase Storage binding waits on the hosted project.
+- **T-033 🟡** — `<MagneticCursor>` deferred to T-044; it is desktop-only polish.
+- **The full tier loads all 72 frames (~415 KB)** in idle time after first paint. Within budget, but it is
+  the biggest download on the page — revisit if the field RUM (T-094) shows it competing with LCP.
+- The 2.5D renderer looks like a flat-lay turning, not a garment on a body. Fine for v1; photography or a
+  garment model would replace `renderTurntable` behind the same contract.
+
+**Verified:** full workspace `typecheck lint test build budget` uncached; `motion-check` green on all tiers
+and seen failing; the hero scrolled by eye in Chrome (full tier, sticky pin, canvas painted, Lenis loaded).
+
+**Not verified:** a real phone; Safari/WebKit; the admin app (unchanged shell).
 
 ---
 
