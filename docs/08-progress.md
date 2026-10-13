@@ -21,16 +21,16 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
 **Next up:** Phase 2 — the film. T-029 (`libs/motion` scaffold + tier detection), then T-030 and T-031
-(`<ScrollStage>`, `<CanvasSequence>`), which are the critical path. Install the Chrome DevTools MCP
-before T-030; `motion-check` depends on it.
+(`<ScrollStage>`, `<CanvasSequence>`), which are the critical path. The Chrome DevTools MCP is installed
+in `.mcp.json` (13 Oct); it loads on the next Claude Code start, after the one-time project-server approval.
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
 numbers, not opinions.
 
-**Needs a decision:** none blocking. Two need the operator before their tasks: a hosted Supabase
-project in Mumbai (T-017 — needs your account) and a GitHub remote (T-015 — CI is written but has
-never run).
+**Needs a decision:** none blocking. Operator decided 13 Oct: **local Postgres only for now** — the
+hosted Supabase project (T-017) and the GitHub remote (T-015) come later and will be shared then. All
+changes stay local until the remote exists; nothing is pushed.
 
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
