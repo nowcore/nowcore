@@ -18,7 +18,7 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 4 — Admin             | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
 | **Phase 5 — Trend radar**   | ▓▓▓▓▓▓▓▓░░ 9 / 11 tasks · 2 🟡               |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
-| Phase 7 — Hardening         | ▓▓▓▓▓░░░░░ 5 / 11 tasks                      |
+| Phase 7 — Hardening         | ▓▓▓▓▓░░░░░ 5 / 11 tasks · 1 🟡               |
 
 **Next up:** Phase 6 — accounts (Supabase Auth, phone OTP or email; order history). It needs the hosted
 Supabase project (T-017). Until that exists, Phase 7 hardening items that are local — per-route body limits
@@ -46,6 +46,54 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-15 — Field performance from real visits · T-094 (RUM half)
+
+Every storefront page view now reports how it actually performed, and the admin dashboard shows it against the
+budgets. This is how the Phase 2 gate (≥ 55 fps p95 on a mid-tier Android) gets judged on real phones once the
+site has visitors, instead of in the lab.
+
+**What landed.**
+
+- **Storefront** (`features/rum/Rum.tsx`, a client island in the root layout): LCP, INP, CLS, FCP, TTFB from
+  Next's `useReportWebVitals` (no new dependency); plus the 95th-percentile **frame time while scrolling**,
+  sampled with requestAnimationFrame only while the visitor scrolls (an idle tab costs nothing). One beacon per
+  page view via `sendBeacon` when the page hides or the route changes. Route patterns only — never a URL, since
+  `/order/…?t=` carries a token. +3.4 KB gzipped per route (budget 180, now 135).
+- **`/api/rum`** in the web app passes it to the API (BFF only; 4 KB cap).
+- **`POST /rum`** validates (zod) and stores one row per metric in `rum_samples`, grouped by a beacon id made on
+  the server. **Anonymous by construction**: no visitor id, no IP, no user agent — cores, memory, network type,
+  mobile, tier. Rate-limited (30/min) like the other public writes.
+- **Admin dashboard → Field performance**: p75 per metric over 7 days, split all / low-end (≤ 4 cores or ≤ 4 GB) /
+  each motion tier; green or red against NFR-1/NFR-2; grey until a cell has 20 samples.
+
+**Found in the browser, fixed:**
+
+- The tier resolves after hydration (static → full); with it as an effect dependency, that counted as the end
+  of a page view and sent a half beacon tagged `static`. Read through a ref now.
+- LCP was missing from every beacon: it is finalised on "hidden", and whether the vitals library or this
+  beacon hears that first is listener order. The island keeps its own last-LCP observer as the fallback; LCP now
+  arrives.
+
+**Counts:** 10 projects, 149 tests (API 64). One full uncached run green. The second run's worker render test
+missed its time budget after 909 s of wall time on 2% CPU — the Mac was on battery (16%) and dropping in and out
+of sleep (pmset: DarkWake from Deep Idle), load average 36. A rerun hit the same stall. Not a code change (the
+renderer was not touched; it passed in every earlier run); **re-run the full check on a plugged-in, awake
+machine** before trusting this entry fully.
+
+**Also found by the full check:** `rum_samples` first used `Float` columns, and the schema guard (no Float or
+Decimal anywhere, so money can never be one) failed. Values are now integers in thousandths of their unit,
+memory in MB; the migration was rewritten before it was ever committed.
+
+**Watched failing:** the fps conversion removed (summary test failed); validation removed (junk test failed).
+
+**Carried forward:**
+
+- **Product analytics** (funnels, conversion) is the other half of T-094 and needs a provider choice — 🟡.
+- No retention policy on `rum_samples` yet; add a 90-day purge before traffic is real.
+- Dev builds report dev-build frame times (29 fps here); judge only production numbers.
 
 ---
 

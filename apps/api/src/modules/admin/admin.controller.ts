@@ -17,9 +17,11 @@ import {
   Dashboard,
   Login,
   type AdminOrderDetail,
+  type AdminRum,
   type AdminOrderList,
   type Session,
 } from '@nowcore/shared';
+import { AdminRumService } from './admin-rum.service.js';
 import { AdminOrdersService } from './admin-orders.service.js';
 import { AuthService } from './auth.service.js';
 import { OperatorGuard, bearer } from './operator.guard.js';
@@ -59,7 +61,17 @@ export class AdminSessionController {
 @Controller('admin')
 @UseGuards(OperatorGuard)
 export class AdminController {
-  constructor(private readonly orders: AdminOrdersService) {}
+  constructor(
+    private readonly orders: AdminOrdersService,
+    private readonly rum: AdminRumService,
+  ) {}
+
+  /** Field performance over the last 1–30 days (T-094). */
+  @Get('rum')
+  fieldPerformance(@Query('days') days?: string): Promise<AdminRum> {
+    const n = Math.min(30, Math.max(1, Number.parseInt(days ?? '7', 10) || 7));
+    return this.rum.summary(n);
+  }
 
   @Get('me')
   me(@Req() req: Authed): { email: string; name: string } {

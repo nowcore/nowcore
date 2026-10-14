@@ -161,6 +161,7 @@ POST  /orders                          re-validates price + availability, create
 GET   /orders/:reference?token=        tracking without an account (signed link)
 POST  /waitlist                        subscribe — idempotent, same answer either way (T-083)
 POST  /waitlist/unsubscribe            {email, token}; token = HMAC of the email, sent in every alert
+POST  /rum                             field performance beacon (T-094); anonymous; via the storefront's /api/rum
 ```
 
 Admin — **built** (T-063–T-073), behind an operator session (ADR-005: sign-in in the API, not Supabase Auth).
@@ -178,6 +179,7 @@ POST  /admin/drops/:id/close           close early
 POST  /admin/products/:id/artwork      upload → enqueues render.turntable
 GET   /admin/orders                    filter, paginate
 POST  /admin/orders/:id/retry          re-enqueue a failed fulfilment
+GET   /admin/rum?days=7                p75 vitals and scroll fps, by tier and low-end devices
 GET   /admin/trends                    radar board: two-source clusters, the single-source watch list, source freshness
 POST  /admin/trends/decide             {key, action: shortlist|reject|reset}
 POST  /admin/trends/promote            {key} → draft drop; every trend under the key linked as evidence (T-081)

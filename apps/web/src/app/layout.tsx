@@ -4,6 +4,7 @@ import { Grain, MotionProvider, SmoothScroll } from '@nowcore/motion';
 import { DropTheme, SIGNAL } from '@nowcore/ui';
 import { env } from '../env';
 import { liveDrop } from '../lib/api';
+import { Rum } from '../features/rum/Rum';
 import { fontVariables } from './fonts';
 import './global.css';
 
@@ -35,6 +36,7 @@ export default async function RootLayout({
       <DropTheme as="body" accent={accent}>
         <MotionProvider>
           <SmoothScroll />
+          <Rum />
           <Grain />
           {children}
         </MotionProvider>

@@ -4,6 +4,7 @@ import { HealthController } from './health.controller.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { AssetsModule } from './modules/assets/assets.module.js';
 import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
+import { RumModule } from './modules/rum/rum.module.js';
 import { CartModule } from './modules/cart/cart.module.js';
 import { FulfilmentModule } from './modules/fulfilment/fulfilment.module.js';
 import { PodModule } from './modules/fulfilment/pod.module.js';
@@ -33,6 +34,7 @@ export class AppModule {
         AdminModule,
         AssetsModule,
         WaitlistModule,
+        RumModule,
       ],
       controllers: [HealthController],
       providers: [{ provide: ENV, useValue: env }, PrismaService],

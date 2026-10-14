@@ -2,6 +2,7 @@ import { Dashboard, AdminOrderList, formatInr } from '@nowcore/shared';
 import { get } from '../../lib/api';
 import { StatusPill, micro } from '../../features/ui';
 import { LiveRefresh } from '../../features/LiveRefresh';
+import { FieldPerformance } from '../../features/FieldPerformance';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,8 @@ export default async function Home({
           </ul>
         </section>
       )}
+
+      <FieldPerformance />
 
       <section aria-labelledby="recent-h" className="px-5 py-4">
         <h2 id="recent-h" className="mb-3 text-sm font-medium">

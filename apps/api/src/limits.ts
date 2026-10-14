@@ -19,6 +19,8 @@ export const LIMITS: Record<string, { perMinute?: number; body?: number }> = {
   'POST /waitlist/unsubscribe': { perMinute: 5 },
   // Password guessing. Per IP; a lockout per account would let anyone lock the operator out.
   'POST /admin/session': { perMinute: 5 },
+  // A page view sends one beacon; a tab-switching visitor a few.
+  'POST /rum': { perMinute: 30, body: 4 * 1024 },
   'POST /webhooks/:provider': { perMinute: 600 },
   'POST /webhooks/pod/:provider': { perMinute: 600 },
   // Artwork arrives base64 in JSON: 8 MB of PNG is ~10.7 MB on the wire.

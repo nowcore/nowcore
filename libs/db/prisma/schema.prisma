@@ -392,3 +392,27 @@ model OperatorSession {
   @@index([operatorId])
   @@map("operator_sessions")
 }
+
+// ------------------------------------------------------------- field metrics
+
+/// One measurement from one real page view (T-094). Anonymous: no visitor id,
+/// no IP, no user agent. A page view sends up to eight rows, sharing a beacon.
+model RumSample {
+  id        String   @id @default(uuid()) @db.Uuid
+  beacon    String   @db.Uuid
+  route     String
+  tier      String
+  metric    String
+  /// Thousandths of the metric's unit (ms, or unitless for CLS): no floats in
+  /// this schema, so money can never be one (schema.spec.ts).
+  value     Int
+  cores     Int?
+  /// navigator.deviceMemory in MB (Chrome reports 0.25–8 GB).
+  memoryMb  Int?     @map("memory_mb")
+  net       String?
+  mobile    Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([metric, createdAt])
+  @@map("rum_samples")
+}
