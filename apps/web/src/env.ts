@@ -6,6 +6,8 @@ import { z } from 'zod';
  * provider secret must never be readable here at all (docs/07 §4).
  */
 const Env = z.object({
+  /** The public origin, for canonical URLs, the sitemap and share cards. */
+  SITE_URL: z.url().default('http://localhost:3000'),
   API_URL: z.url().default('http://localhost:4100'),
   /** Shared with the API, which calls /api/revalidate when the catalogue changes. */
   REVALIDATE_SECRET: z.string().min(16).default('local-dev-revalidate-secret'),

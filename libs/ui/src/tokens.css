@@ -12,9 +12,13 @@
   --ash: #15171b;
   --steel: #22252b;
   /* #8a8e96, not the first-drafted #6e7279: that measured ~4.1:1 on void and
-     fails AA for body copy. #6e7279 survives as --ghost, for ≥24px only. */
+     fails AA for body copy. */
   --smoke: #8a8e96;
-  --ghost: #6e7279;
+  /* The quiet step below smoke. Was #6e7279 "for ≥24px only" — but it was
+     used for 10–12px labels in 66 places and failed AA there (Lighthouse,
+     15 Oct 2026). #7c8088 passes 4.5:1 on void (5.0), panels (4.9) and ash
+     (4.5), so it is safe at any size on those surfaces. Not on steel (3.9). */
+  --ghost: #7c8088;
   --paper: #f4f3f0;
   --paper-dim: #c9c7c1;
   --signal: #d7ff3e;
@@ -71,4 +75,15 @@ html {
   background: var(--void);
   color: var(--paper);
   color-scheme: dark;
+}
+
+/* One focus ring everywhere a keyboard lands (T-092): the drop's accent, which
+   the publish check already holds to contrast on the void. Unlayered on
+   purpose, so it beats the outline-none that inputs carry for mouse users —
+   the waitlist email field had no focus indicator at all (15 Oct 2026).
+   Skip-link targets (tabindex=-1) are exempt: a ring round the whole page
+   says nothing. */
+:focus-visible:not([tabindex='-1']) {
+  outline: 2px solid var(--drop-accent, var(--signal));
+  outline-offset: 2px;
 }

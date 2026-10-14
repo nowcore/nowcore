@@ -2,14 +2,18 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Grain, MotionProvider, SmoothScroll } from '@nowcore/motion';
 import { DropTheme, SIGNAL } from '@nowcore/ui';
+import { env } from '../env';
 import { liveDrop } from '../lib/api';
 import { fontVariables } from './fonts';
 import './global.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(env.SITE_URL),
   title: 'NOWCORE — wear the moment',
   description:
     'Trend-driven drops. 72 hours, printed to order, never restocked.',
+  openGraph: { siteName: 'NOWCORE', type: 'website', locale: 'en_IN' },
+  twitter: { card: 'summary_large_image' },
 };
 
 export const viewport: Viewport = { themeColor: 'black', colorScheme: 'dark' };

@@ -38,6 +38,7 @@ Read in order. Each builds on the last.
 | 09  | [Agent tooling](./09-agent-tooling.md)   | MCP servers and skills — what is set up, and what is not | Live   |
 | 10  | [Design system](./10-design-system.md)   | Tokens, type, motion grammar, performance budgets        | Draft  |
 | 11  | [Business model](./11-business-model.md) | Unit economics, pricing, COD policy, IP rules            | Draft  |
+| 12  | [Runbook](./12-runbook.md)               | Provider outage, stuck order, failed drop open           | Living |
 
 **ADRs** live in [`./adr/`](./adr/):
 

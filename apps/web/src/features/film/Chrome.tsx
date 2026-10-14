@@ -21,6 +21,14 @@ export function FilmChrome({
 }) {
   return (
     <>
+      {/* Seven stops of chrome before the page on every Tab-through (T-092).
+          Hidden until focused; its target sits after all the chrome. */}
+      <a
+        href="#content"
+        className="sr-only z-50 rounded bg-paper text-sm font-medium text-void focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:px-4 focus:py-3"
+      >
+        Skip to content
+      </a>
       {/* The backdrop fades from the void so a headline scrolling under the
           header is dimmed rather than collided with. */}
       <header className="fixed inset-x-0 top-0 z-40 flex items-start justify-between gap-6 bg-gradient-to-b from-void via-void/85 to-transparent px-5 pb-8 pt-5 md:px-10 md:pt-6">
@@ -78,6 +86,7 @@ export function FilmChrome({
           {cartCount}
         </a>
       </div>
+      <span id="content" tabIndex={-1} />
     </>
   );
 }

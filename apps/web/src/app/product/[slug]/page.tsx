@@ -27,6 +27,15 @@ export async function generateMetadata({
   return {
     title: `${product.title} — ${dropLabel(drop.number)} · NOWCORE`,
     description: product.description,
+    alternates: { canonical: `/product/${product.slug}` },
+    openGraph: {
+      // Replaces the layout's openGraph rather than merging with it, so it repeats these.
+      siteName: 'NOWCORE',
+      locale: 'en_IN',
+      type: 'website',
+      title: product.title,
+      description: product.description,
+    },
   };
 }
 
@@ -69,8 +78,40 @@ export default async function ProductPageRoute({
       : words.slice(0, 1).join(' ');
   const tail = `${(words.length > 2 ? words.slice(-2) : words.slice(1)).join(' ').toLowerCase()}.`;
 
+  // Product structured data (T-093): what a search result can say about it.
+  const sizes = product.colourways.flatMap((c) => c.sizes);
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description,
+    brand: { '@type': 'Brand', name: 'NOWCORE' },
+    sku: sizes[0]?.sku,
+    image: product.colourways
+      .map((c) => c.frames?.still)
+      .filter((u): u is string => !!u),
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'INR',
+      lowPrice: (Math.min(...sizes.map((z) => z.pricePaise)) / 100).toFixed(2),
+      highPrice: (Math.max(...sizes.map((z) => z.pricePaise)) / 100).toFixed(2),
+      offerCount: sizes.length,
+      availability:
+        open && sizes.some((z) => !z.soldOut)
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/SoldOut',
+    },
+  };
+
   return (
     <main className="bg-void pb-40 font-sans text-paper">
+      <script
+        type="application/ld+json"
+        // Escaped: a product title is operator input, and "</script>" in it must not end the tag.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+        }}
+      />
       <FilmChrome
         drop={drop}
         buyHref={`/product/${product.slug}`}
@@ -81,8 +122,10 @@ export default async function ProductPageRoute({
         <ProductStage
           product={product}
           open={open}
+          // Keyed because React's dev build flags server-made elements handed to
+          // a client component as props ("unique key", 15 Oct 2026). Dev only.
           header={
-            <div className="flex flex-col gap-4">
+            <div key="header" className="flex flex-col gap-4">
               <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-smoke">
                 {dropLabel(drop.number)} · {drop.claimed} of{' '}
                 {drop.editionSize ?? '∞'} claimed
@@ -116,7 +159,7 @@ export default async function ProductPageRoute({
             </div>
           }
           details={
-            <dl className="border-t border-steel">
+            <dl key="details" className="border-t border-steel">
               {SPECS.map(([k, v]) => (
                 <div
                   key={k}

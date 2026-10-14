@@ -15,6 +15,13 @@ describe('palette contrast (docs/10)', () => {
     expect(contrast('#8A8E96', VOID)).toBeGreaterThanOrEqual(4.5);
     expect(contrast('#6E7279', VOID)).toBeLessThan(4.5);
   });
+  it('ghost, read from the token sheet, clears AA for small text on void and ash', () => {
+    const css = readFileSync(join(import.meta.dirname, 'tokens.css'), 'utf8');
+    const ghost = css.match(/--ghost:\s*(#[0-9a-f]{6});/)?.[1] ?? '';
+    const ash = css.match(/--ash:\s*(#[0-9a-f]{6});/)?.[1] ?? '';
+    expect(contrast(ghost, VOID)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(ghost, ash)).toBeGreaterThanOrEqual(4.5);
+  });
   it('paper is high contrast on the void', () => {
     expect(contrast('#F4F3F0', VOID)).toBeGreaterThan(15);
   });

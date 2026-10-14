@@ -6,7 +6,10 @@ import { currentCart } from '../../features/cart/cart';
 import { FilmChrome } from '../../features/film/Chrome';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Shop — NOWCORE' };
+export const metadata: Metadata = {
+  title: 'Shop — NOWCORE',
+  alternates: { canonical: '/shop' },
+};
 
 const dateFmt = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit',

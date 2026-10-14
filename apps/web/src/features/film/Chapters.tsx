@@ -332,12 +332,12 @@ export function TakeIt({ drop }: { drop: DropView }) {
       aria-labelledby="take-it-h"
       className="relative overflow-hidden pb-16 pt-24"
     >
+      {/* The watermark is generated content, not text: it is decoration at
+          1.1:1 on purpose, and as a text node it failed the contrast audit. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute -right-[4%] bottom-2 whitespace-nowrap text-[clamp(6rem,15vw,12rem)] font-semibold leading-[0.8] tracking-[-0.05em] text-ash"
-      >
-        NOWCORE
-      </span>
+        className="pointer-events-none absolute -right-[4%] bottom-2 whitespace-nowrap text-[clamp(6rem,15vw,12rem)] font-semibold leading-[0.8] tracking-[-0.05em] text-ash before:content-['NOWCORE']"
+      />
       <div className="relative mx-auto flex max-w-[1280px] flex-col gap-12 px-6 md:px-12">
         <div className="flex flex-wrap items-end justify-between gap-12">
           <div id="take-it-h" className="flex-[1_1_420px]">

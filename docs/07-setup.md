@@ -79,7 +79,7 @@ RESEND_API_KEY  SENTRY_DSN
 ```
 NEXT_PUBLIC_API_URL  NEXT_PUBLIC_SUPABASE_URL  NEXT_PUBLIC_SUPABASE_ANON_KEY
 NEXT_PUBLIC_RAZORPAY_KEY_ID
-API_URL  REVALIDATE_SECRET  BFF_SECRET       # server-only; admin needs API_URL + BFF_SECRET
+API_URL  REVALIDATE_SECRET  BFF_SECRET  SITE_URL   # server-only; admin needs API_URL + BFF_SECRET
 ```
 
 **No service role key, provider secret or webhook secret may ever appear in a `NEXT_PUBLIC_` variable.**

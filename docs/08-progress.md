@@ -18,7 +18,7 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 4 — Admin             | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
 | **Phase 5 — Trend radar**   | ▓▓▓▓▓▓▓▓░░ 9 / 11 tasks · 2 🟡               |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
-| Phase 7 — Hardening         | ▓▓░░░░░░░░ 2 / 11 tasks                      |
+| Phase 7 — Hardening         | ▓▓▓▓▓░░░░░ 5 / 11 tasks                      |
 
 **Next up:** Phase 6 — accounts (Supabase Auth, phone OTP or email; order history). It needs the hosted
 Supabase project (T-017). Until that exists, Phase 7 hardening items that are local — per-route body limits
@@ -35,6 +35,7 @@ numbers, not opinions.
   be written from memory.
 - **A Resend (or other) API key** and a sending domain → real buyer emails (T-062).
 - **A mid-tier Android phone** for the Phase 2 gate, measured on hardware.
+- **Privacy, terms, shipping/returns and COD policies** → T-097. The footer already links to them.
 - **A Reddit app (client id + secret) and a YouTube Data API key** → T-075 and T-078 against the real APIs.
   Without them the radar runs on HN and Google Trends only, which rarely overlap (US tech vs India searches).
 
@@ -45,6 +46,55 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-15 — Accessibility, SEO and the runbook · T-092, T-093, T-098
+
+**Accessibility (T-092).** Lighthouse on every storefront page (mobile) and every admin page (desktop), then a
+keyboard pass by hand. Every page now scores **100** on accessibility.
+
+- **`--ghost` failed AA wherever it was used** — 4.0:1 on the void at 10–12 px. The design system said "for
+  ≥ 24px only"; the code used it for small labels in 66 places. Rather than edit 66 call sites, the token moved to
+  `#7C8088` (5.0:1 on void, 4.5:1 on ash, still a step below `--smoke`). A test reads the token sheet and holds it
+  to AA; it failed on the old value.
+- **The footer watermark** failed contrast as a text node (decoration at 1.1:1 on purpose); it is now generated
+  content.
+- **The waitlist email field had no focus indicator at all** (`outline-none`, nothing in its place). One
+  unlayered rule in `tokens.css` now gives every keyboard focus a 2 px ring in the drop's accent — beats the
+  `outline-none` on inputs, exempts skip-link targets.
+- **Skip link**: seven chrome stops before content on every Tab-through; "Skip to content" now lands after all of
+  it (checked: the next Tab reaches the film's own link, not the header's).
+- Keyboard pass: logical order, no traps, every stop scrolls into view under smooth scrolling.
+- A React dev-only key warning on the product page (server-made elements passed as props to a client component)
+  — pre-existing, confirmed by swapping in the committed page; keyed, console now clean.
+
+**SEO (T-093).** `SITE_URL` + `metadataBase`; canonical per page (a root-level canonical would have made every
+page claim to be the home page); `sitemap.xml` (home, shop, live products); `robots.txt` (cart, checkout, order,
+unsubscribe, api kept out — each also `noindex`); Product JSON-LD with INR price range and availability; a share
+card per drop and per product in the drop's accent.
+
+- **The share card's fonts never loaded at first**: `new URL(…, import.meta.url)` gave the bundler's URL, which
+  `readFile` refuses — and `next/og` then silently downloaded a fallback face from Google at render time (that is
+  where the ₹ came from). Now Geist and Geist Mono TTFs ship in `features/seo/fonts` (OFL), read from the app root,
+  traced into the build. No network call; the log is clean.
+
+**Runbook (T-098)**: [`docs/12-runbook.md`](./12-runbook.md) — provider outages, stuck orders by status, a drop
+that did not open or close, the edition going over its cap, load, local orphans. Written against the code; it
+found one real gap (below).
+
+**Counts:** 10 projects, 145 tests (ui 9).
+
+**Carried forward:**
+
+- **A payment that lands while Redis is down** moves the order to `PAID` but never queues its printer job, and
+  nothing retries it. The runbook gives the query; the admin has no button (`PAID` is not an attention state).
+- **Footer links to `/legal/*` 404** — the pages are T-097 and need the operator's policies.
+- Admin pages share the title "NOWCORE admin"; per-page titles would help screen-reader users switching tabs.
+- `--ghost` is still below AA on `--steel` (3.9:1); no small text sits on steel today.
+
+**Verified:** Lighthouse on 7 storefront and 5 admin pages; the keyboard pass and the skip link in Chrome; the
+share card rendered and inspected; robots, sitemap and JSON-LD fetched; two uncached full runs.
 
 ---
 

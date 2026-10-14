@@ -24,7 +24,9 @@ object in the room. A closed drop is stamped and archived, never deleted. Scarci
 ```
 
 `--smoke` was moved from the originally planned `#6E7279` to `#8A8E96`: the darker value measured ~4.1:1
-on `--void` and fails AA for body copy. `#6E7279` survives only for decorative text ≥ 24px.
+on `--void` and fails AA for body copy. `--ghost`, the quiet step below it, is `#7C8088` (was `#6E7279`
+"for ≥ 24px only" — a rule the code broke in 66 places; changed 15 Oct 2026 after a Lighthouse pass). It
+meets 4.5:1 on `--void`, panels and `--ash`, so it is safe at any size there — but not on `--steel` (3.9:1).
 
 **The accent.** One use at a time: live badge, countdown digits, primary CTA, the active rail tick.
 Black type on the accent is the only colour inversion in the system. Each drop sets `accentColor`;

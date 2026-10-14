@@ -23,6 +23,10 @@ const nextConfig = {
    * which it is.
    */
   distDir: process.env.NEXT_DIST_DIR ?? '.next',
+  /** The share cards read their fonts from disk (features/seo/card.tsx); ship them. */
+  outputFileTracingIncludes: {
+    '/**/opengraph-image': ['./src/features/seo/fonts/*.ttf'],
+  },
 };
 
 module.exports = nextConfig;
