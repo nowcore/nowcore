@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { Queue } from 'bullmq';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { CartView, OrderView, PlacedOrder } from '@nowcore/shared';
+import { CartView, OrderView, PlacedOrder, QUEUE } from '@nowcore/shared';
 import { createApp } from '../../create-app.js';
 import { readEnv } from '../../env.js';
 import { claimed, HOLD_MS } from '@nowcore/orders';
@@ -30,15 +31,15 @@ describe('orders', () => {
     pincode: '560001',
   };
 
+  const env = readEnv({
+    RECONCILE: 'off',
+    QUEUE_PREFIX: 'test-api',
+    DROP_CLOCK: 'off',
+    RATE_LIMIT: 'off',
+  });
+
   beforeAll(async () => {
-    app = await createApp(
-      readEnv({
-        RECONCILE: 'off',
-        QUEUE_PREFIX: 'test-api',
-        DROP_CLOCK: 'off',
-        RATE_LIMIT: 'off',
-      }),
-    );
+    app = await createApp(env);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     db = app.get(PrismaService);
@@ -327,6 +328,33 @@ describe('orders', () => {
       url: `/orders/${placed.reference}?t=${placed.token}`,
     });
     expect(OrderView.parse(ok.json()).lines).toHaveLength(1);
+  });
+
+  it('hands the printer a paid order whose job was never queued', async () => {
+    // What a Redis outage at the moment of payment leaves behind: PAID, no job.
+    const placed = PlacedOrder.parse(
+      (await place(await cartWith(['L', 1]))).json(),
+    );
+    const order = await db.order.update({
+      where: { reference: placed.reference },
+      data: { status: 'PAID', createdAt: new Date(Date.now() - 11 * 60_000) },
+    });
+    const pod = new Queue(QUEUE.pod, {
+      connection: {
+        host: '127.0.0.1',
+        port: Number(new URL(env.REDIS_URL).port),
+      },
+      prefix: env.QUEUE_PREFIX,
+    });
+    try {
+      expect(await pod.getJob(`submit-${order.id}`)).toBeUndefined();
+      await app.get(ReconcileService).run();
+      expect((await pod.getJob(`submit-${order.id}`))?.data).toEqual({
+        orderId: order.id,
+      });
+    } finally {
+      await pod.close();
+    }
   });
 
   it('reconciles an order whose webhook never came', async () => {

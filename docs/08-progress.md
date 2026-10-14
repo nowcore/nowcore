@@ -49,6 +49,19 @@ tokens, the type pairing, the motion grammar and the three-tier degradation, bec
 
 ---
 
+## 2026-10-15 — Follow-up: the "paid but never queued" gap was not a gap
+
+The runbook (T-098) said an order paid while Redis was down would never reach the printer. Wrong: the reconciler
+has re-queued orders `PAID` for over 10 minutes with no printer order since the fulfilment slice (`0cbc64e`) —
+but nothing tested it, which is how it was missed. Now a test leaves an order `PAID` with no job, runs the
+reconciler, and finds `submit-<id>` queued; with the re-queue removed, it fails. Runbook corrected. What _is_
+lost in that case is the buyer's confirmation email (not re-sent; the reconciler cannot know whether it went),
+and the runbook says so.
+
+**Counts:** 10 projects, 146 tests (API 61).
+
+---
+
 ## 2026-10-15 — Accessibility, SEO and the runbook · T-092, T-093, T-098
 
 **Accessibility (T-092).** Lighthouse on every storefront page (mobile) and every admin page (desktop), then a
@@ -81,14 +94,12 @@ card per drop and per product in the drop's accent.
 
 **Runbook (T-098)**: [`docs/12-runbook.md`](./12-runbook.md) — provider outages, stuck orders by status, a drop
 that did not open or close, the edition going over its cap, load, local orphans. Written against the code; it
-found one real gap (below).
+named a gap that turned out not to exist — see the 15 Oct follow-up.
 
 **Counts:** 10 projects, 145 tests (ui 9).
 
 **Carried forward:**
 
-- **A payment that lands while Redis is down** moves the order to `PAID` but never queues its printer job, and
-  nothing retries it. The runbook gives the query; the admin has no button (`PAID` is not an attention state).
 - **Footer links to `/legal/*` 404** — the pages are T-097 and need the operator's policies.
 - Admin pages share the title "NOWCORE admin"; per-page titles would help screen-reader users switching tabs.
 - `--ghost` is still below AA on `--steel` (3.9:1); no small text sits on steel today.

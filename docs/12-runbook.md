@@ -51,15 +51,18 @@ then, "the database" is `docker exec nowcore-postgres-1 psql -U nowcore`.
 
 - **The system already:** rate limits **fail open** (requests go through unlimited). Queues stop: nothing is
   submitted to the printer and no email is sent. A payment that lands while Redis is down still moves the order
-  to `PAID`, but its printer job is never queued — and nothing retries that enqueue.
-- **You:** restore Redis first. Then look for `PAID` orders that never moved on:
+  to `PAID`; its printer job is not queued then, but the reconciler (every 5 minutes, `RECONCILE=on`) re-queues
+  any order `PAID` for over 10 minutes with no printer order. The job id is the order, so this never queues twice.
+  The buyer's **confirmation email is not** re-queued — the reconciler cannot know whether it was sent.
+- **You:** restore Redis. Printer jobs catch up within ~15 minutes on their own. To see which buyers may have
+  missed their confirmation, list the orders paid during the outage:
 
   ```sql
-  select reference, created_at from orders where status = 'PAID' and created_at < now() - interval '10 minutes';
+  select reference, email, created_at from orders
+  where status <> 'PENDING' and created_at between '<outage start>' and '<outage end>';
   ```
 
-  There is no admin button for these yet — `PAID` is not an attention state, and Retry only accepts
-  `FULFILMENT_FAILED`. Hand the list to the developer. **A known gap, carried forward in docs/08.**
+  Each can still see their order from the link on the order page; send a note if it matters.
 
 ---
 
@@ -69,7 +72,7 @@ then, "the database" is `docker exec nowcore-postgres-1 psql -U nowcore`.
 | --------------------- | ----------------------------------------------- | ------------------------------------------------ |
 | `PENDING` > 15 min    | the buyer abandoned checkout                    | nothing; it holds no pieces after 15 min         |
 | `PENDING`, buyer paid | webhook lost                                    | wait for reconciliation (5 min), see §1          |
-| `PAID` > 10 min       | the printer job was never enqueued (Redis blip) | see §1, Redis                                    |
+| `PAID` > 15 min       | the reconciler is off, or Redis is still down   | check `RECONCILE=on` and Redis (§1)              |
 | `FULFILMENT_QUEUED`   | the printer is slow or down; retries running    | wait; it becomes `FULFILMENT_FAILED` after ~17 h |
 | `FULFILMENT_FAILED`   | the printer refused or retries ran out          | **Retry**, or fix the cause, or Cancel/Refund    |
 | `PRINTING` for days   | the printer's status webhook is not reaching us | check the printer dashboard; ask the developer   |
