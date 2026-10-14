@@ -152,3 +152,11 @@ export const VerifyPayment = z.object({
   signature: z.string().min(1),
 });
 export type VerifyPayment = z.infer<typeof VerifyPayment>;
+
+export const JoinWaitlist = z.object({
+  email: z.email('Enter an email address'),
+});
+export const Unsubscribe = z.object({
+  email: z.email(),
+  token: z.string().min(1),
+});

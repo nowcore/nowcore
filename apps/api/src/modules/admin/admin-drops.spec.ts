@@ -38,7 +38,11 @@ describe('admin drops', () => {
 
   beforeAll(async () => {
     app = await createApp(
-      readEnv({ RECONCILE: 'off', QUEUE_PREFIX: 'test-api' }),
+      readEnv({
+        RECONCILE: 'off',
+        QUEUE_PREFIX: 'test-api',
+        DROP_CLOCK: 'off',
+      }),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();

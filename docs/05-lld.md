@@ -124,6 +124,17 @@ model Trend {
   @@unique([source, externalId])
   @@index([status, score])
 }
+
+// Built (T-074–T-081): Trend also has url and seenAt (last sighting; capturedAt is the first).
+// Clusters are computed at read time by radar() in libs/shared/trends.ts — keys are words and
+// adjacent word pairs; a key is on the board when two sources carry it at score ≥ 50 inside
+// 24 h. Scores are one log scale across sources (normalise()). The only stored state:
+model TrendCluster {
+  key       String      @id          // "gemini argon"
+  status    TrendStatus              // SHORTLISTED | REJECTED | SHIPPED
+  dropId    String?
+  decidedAt DateTime
+}
 ```
 
 Also: `Customer` (→ `auth.users`), `Address`, `Cart`/`CartItem`, `Asset`, `WaitlistSubscription`,
@@ -148,7 +159,8 @@ GET   /carts/:id                       lines priced from current variants, avail
 PUT   /carts/:id/items                 {sku, quantity 0..5} — refuses sold out, closed drop
 POST  /orders                          re-validates price + availability, creates Razorpay order
 GET   /orders/:reference?token=        tracking without an account (signed link)
-POST  /waitlist                        subscribe
+POST  /waitlist                        subscribe — idempotent, same answer either way (T-083)
+POST  /waitlist/unsubscribe            {email, token}; token = HMAC of the email, sent in every alert
 ```
 
 Admin — **built** (T-063–T-073), behind an operator session (ADR-005: sign-in in the API, not Supabase Auth).
@@ -166,8 +178,9 @@ POST  /admin/drops/:id/close           close early
 POST  /admin/products/:id/artwork      upload → enqueues render.turntable
 GET   /admin/orders                    filter, paginate
 POST  /admin/orders/:id/retry          re-enqueue a failed fulfilment
-GET   /admin/trends                    radar board
-POST  /admin/trends/:id/promote        trend → draft drop, carrying its evidence
+GET   /admin/trends                    radar board: two-source clusters, the single-source watch list, source freshness
+POST  /admin/trends/decide             {key, action: shortlist|reject|reset}
+POST  /admin/trends/promote            {key} → draft drop; every trend under the key linked as evidence (T-081)
 ```
 
 Orders and payments — **built (T-050–T-057)**:

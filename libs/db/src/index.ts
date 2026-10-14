@@ -26,6 +26,7 @@ export type {
   TrendStatus,
   Variant,
   WaitlistSubscription,
+  DropAlert,
   WallPost,
   WebhookEvent,
 } from '@prisma/client';

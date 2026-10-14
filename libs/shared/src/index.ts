@@ -9,3 +9,4 @@ export * from './jobs.js';
 export * from './admin.js';
 export * from './color.js';
 export * from './blanks.js';
+export * from './trends.js';

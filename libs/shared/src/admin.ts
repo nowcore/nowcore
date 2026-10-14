@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { OrderStatus, PaymentMethod } from './order.js';
 import { Paise } from './money.js';
+import { RadarSource } from './trends.js';
 
 /** Admin contracts (Phase 4). Parsed by apps/admin exactly as the storefront parses its own. */
 export const Login = z.object({
@@ -147,6 +148,8 @@ export const AdminDropRow = z.object({
 export type AdminDropRow = z.infer<typeof AdminDropRow>;
 
 export const AdminDropDetail = AdminDropRow.extend({
+  /** The radar trends it was promoted from (FR-23); empty for a drop made by hand. */
+  evidence: z.array(RadarSource),
   chapters: z.array(
     z.object({
       key: z.string(),

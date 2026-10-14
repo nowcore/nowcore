@@ -1,4 +1,5 @@
 import {
+  isOpen,
   canTransition,
   Chapters,
   ChapterKey,
@@ -170,5 +171,20 @@ describe('drop lifecycle', () => {
     expect(canDropTransition('LIVE', 'ARCHIVED')).toBe(true);
     expect(canDropTransition('ARCHIVED', 'LIVE')).toBe(false);
     expect(canDropTransition('LIVE', 'DRAFT')).toBe(false);
+  });
+});
+
+describe('isOpen', () => {
+  const now = new Date('2026-10-14T12:00:00Z');
+  it('is open only while live and before its close', () => {
+    expect(
+      isOpen(
+        { status: 'LIVE', closesAt: new Date('2026-10-14T12:00:01Z') },
+        now,
+      ),
+    ).toBe(true);
+    expect(isOpen({ status: 'LIVE', closesAt: now }, now)).toBe(false);
+    expect(isOpen({ status: 'LIVE', closesAt: null }, now)).toBe(true);
+    expect(isOpen({ status: 'SCHEDULED', closesAt: null }, now)).toBe(false);
   });
 });

@@ -92,6 +92,8 @@ const Env = z
 
     /** Poll the provider for orders a webhook never confirmed (T-057). Off in tests. */
     RECONCILE: z.enum(['on', 'off']).default('on'),
+    /** Open scheduled drops and close expired ones every minute (T-082). Off in tests. */
+    DROP_CLOCK: z.enum(['on', 'off']).default('on'),
   })
   .superRefine((env, ctx) => {
     if (env.PAYMENTS === 'razorpay') {

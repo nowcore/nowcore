@@ -325,6 +325,40 @@ export default async function DropPage({
 
         {/* ---------------- publish ---------------- */}
         <aside className="flex flex-col gap-4">
+          {d.evidence.length > 0 && (
+            <section
+              aria-labelledby="ev-h"
+              className="flex flex-col gap-2 rounded border border-steel p-4"
+            >
+              <h2 id="ev-h" className={micro}>
+                Evidence · from the radar
+              </h2>
+              <ul className="flex flex-col gap-1">
+                {d.evidence.map((e) => (
+                  <li
+                    key={`${e.source}-${e.term}`}
+                    className="flex gap-2 text-xs text-smoke"
+                  >
+                    <span className="w-24 shrink-0 font-mono text-[10px] text-ghost">
+                      {e.source} {e.score}
+                    </span>
+                    {e.url ? (
+                      <a
+                        href={e.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-paper hover:underline"
+                      >
+                        {e.term}
+                      </a>
+                    ) : (
+                      <span>{e.term}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <section
             aria-labelledby="pub-h"
             className="flex flex-col gap-3 rounded border border-steel p-4 xl:sticky xl:top-4"
@@ -372,9 +406,9 @@ export default async function DropPage({
                   </button>
                 </form>
                 <p className="text-[11px] leading-snug text-ghost">
-                  Opening notifies the waitlist once that exists (T-083) — not
-                  reversible. Scheduled drops open by hand until the scheduler
-                  lands (T-082).
+                  Opening emails the waitlist — not reversible. A scheduled drop
+                  opens itself within a minute of its time, if it still passes
+                  this check and no other drop is live.
                 </p>
               </>
             )}

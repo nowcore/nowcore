@@ -3,6 +3,7 @@ import { ENV, readEnv, type Env } from './env.js';
 import { HealthController } from './health.controller.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { AssetsModule } from './modules/assets/assets.module.js';
+import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { CartModule } from './modules/cart/cart.module.js';
 import { FulfilmentModule } from './modules/fulfilment/fulfilment.module.js';
 import { PodModule } from './modules/fulfilment/pod.module.js';
@@ -31,6 +32,7 @@ export class AppModule {
         FulfilmentModule.with(env.POD),
         AdminModule,
         AssetsModule,
+        WaitlistModule,
       ],
       controllers: [HealthController],
       providers: [{ provide: ENV, useValue: env }, PrismaService],

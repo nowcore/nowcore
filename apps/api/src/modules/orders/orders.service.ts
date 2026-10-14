@@ -8,6 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  isOpen,
   priceOrder,
   type OrderView,
   type PlaceOrder,
@@ -67,7 +68,7 @@ export class OrdersService {
       const v = byId.get(item.variantId);
       if (!v)
         throw new ConflictException('Something in your cart no longer exists.');
-      if (v.product.drop.status !== 'LIVE')
+      if (!isOpen(v.product.drop))
         throw new ConflictException(
           `${v.product.title} — this drop has closed.`,
         );

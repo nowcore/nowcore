@@ -5,6 +5,7 @@ const ITEMS = [
   { href: '/', label: 'Dashboard' },
   { href: '/orders', label: 'Orders' },
   { href: '/drops', label: 'Drops' },
+  { href: '/radar', label: 'Radar' },
   { href: '/customers', label: 'Customers' },
 ] as const;
 

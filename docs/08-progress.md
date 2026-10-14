@@ -15,14 +15,14 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
 | Phase 2 — The film          | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
 | Phase 3 — Commerce          | ▓▓▓▓▓▓▓▓▓░ 15 / 18 tasks · 2 🟡 · 1 blocked  |
-| **Phase 4 — Admin**         | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
-| Phase 5 — Trend radar       | ░░░░░░░░░░ 0 / 11 tasks                      |
+| Phase 4 — Admin             | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
+| **Phase 5 — Trend radar**   | ▓▓▓▓▓▓▓▓░░ 9 / 11 tasks · 2 🟡               |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
-**Next up:** Phase 5 — the trend radar and the drop engine: ingest (Reddit, HN, Google Trends, YouTube), scoring
-with the two-source rule, the radar board, promote-to-draft, and the scheduler that opens scheduled drops
-and archives closed ones (T-082) — which also notifies the waitlist (T-083).
+**Next up:** Phase 6 — accounts (Supabase Auth, phone OTP or email; order history). It needs the hosted
+Supabase project (T-017). Until that exists, Phase 7 hardening items that are local — per-route body limits
+and rate limiting (T-096) — can go first.
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
@@ -35,6 +35,8 @@ numbers, not opinions.
   be written from memory.
 - **A Resend (or other) API key** and a sending domain → real buyer emails (T-062).
 - **A mid-tier Android phone** for the Phase 2 gate, measured on hardware.
+- **A Reddit app (client id + secret) and a YouTube Data API key** → T-075 and T-078 against the real APIs.
+  Without them the radar runs on HN and Google Trends only, which rarely overlap (US tech vs India searches).
 
 **Needs a decision:** none blocking. Operator decided 13 Oct: **local Postgres only for now** — the
 hosted Supabase project (T-017) and the GitHub remote (T-015) come later and will be shared then. All
@@ -43,6 +45,77 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-14 — The drop engine and the trend radar · T-074–T-084
+
+A drop now opens and closes itself, tells the waitlist once, and can be born on the radar. Run end to end on
+the dev stack: drop 014 set to expire, drop 099 scheduled 20 s out; one clock tick logged `closed [14]
+opened [99]`, the subscriber was mailed once, the storefront showed 099 on the next request. On the radar,
+live HN and Google Trends landed (29 + 9; one fixture search filtered as noise); with one corroborating row
+added by hand, "gemini argon" reached the board, was shortlisted, and promoted to draft DROP 015 with its
+evidence on the drop page. (Demo rows, drops and subscribers removed; the seed restored.)
+
+**What landed.**
+
+- **Waitlist (T-083)**: one row per email (the old `(email, drop_id)` unique let NULL duplicates through —
+  proved with two rows for one email); `POST /waitlist` is idempotent and answers the same whether or not the
+  email was known. A `drop_alerts` ledger row is written _before_ each send, so a retried job never mails
+  anyone twice (at-most-once, by design). Every alert carries a signed unsubscribe link; the page asks for one
+  click instead of acting on the GET, because mail scanners open every link.
+- **Drop clock (T-082, ADR-007)**: in the API, every minute — closes expired drops, opens the earliest due
+  scheduled drop if it still passes the publish check and nothing is live. Opening (clock or operator) is one
+  `open()` under a Postgres advisory lock. `DROP_CLOCK=off` in tests.
+- **Server-authoritative close (T-084)**: `isOpen()` — cart and order refuse a drop past `closesAt` even while
+  it is still LIVE. The countdown corrects for a wrong device clock using the `Date` header of a HEAD request.
+- **Ingest (T-074–T-078)**: hourly BullMQ job schedulers, one per source, upsert on (source, externalId);
+  `seenAt` moves, `capturedAt` keeps the first sighting. One log scale across sources (HN 100 pts ≈ 67,
+  Google 20 000 searches ≈ 72). A noise filter for logins, prices, results, fixtures, horoscopes — taken from
+  the live IN feed. Reddit and YouTube are scheduled only when their credentials exist. `TRENDS=off` in tests.
+- **Radar (T-079–T-081)**: keys are words and adjacent pairs; a key is on the board when two sources carry it
+  at ≥ 50 within 24 h; a word in more than 10% of all trends is dropped as common; a word gives way to a pair
+  with the same sources. Shortlist / reject / reset; promote re-checks the two-source rule, drafts a drop from
+  defaults and links every trend under the key as evidence (FR-23), shown on the drop page.
+
+**Counts:** 10 projects, 138 tests (API 54, worker 21, shared 27). Motion: full 60 fps · LCP 0.53 s · CLS 0;
+reduced 60 fps · 0.42 s; static 0.40 s — unchanged.
+
+**Watched failing before being trusted:**
+
+- **Drop alerts** — ledger made non-blocking and the unsubscribe filter removed: both tests failed.
+- **The clock** — publish check skipped and expiry disabled: all three clock tests failed. The first version
+  of the "fails the check" test passed even with the check gone (014 being live held the drop anyway); `tick()`
+  now reports _why_ a drop is held, and the test asserts the reason.
+- **The close** — cart and order put back on status alone: the past-`closesAt` test failed.
+- **Radar rules** — score line and commonness cap removed: tests failed. The cap's first fixture was vacuous
+  (the common word was folded into a pair instead); rewritten so only the cap can remove it.
+- **Ingest** — noise filter removed and first sighting overwritten: both ingest tests failed.
+- **Promote** — two-source gate removed and evidence limited to the best trend per source: both tests failed.
+- **Orphan workers** — the first live clock run's alert job failed with a ZodError: three NOWCORE workers from
+  earlier dev runs (09:03, 09:16, 09:20) were still consuming the queue with old code. Stopping `pnpm dev`
+  kills pnpm, not nx's continuous children. Killed them (country_dairy's process left alone); the retry sent
+  the alert once.
+
+**Carried forward:**
+
+- **Reddit and YouTube (T-075, T-078) are 🟡**: written to the documented APIs and tested against canned
+  responses; never called for real. Need credentials.
+- **HN + Google Trends rarely corroborate** — different audiences. Expect an empty board until a third source
+  runs. Brand searches ("hotstar") pass the noise filter; widen it with data, not guesses.
+- **Clusters are computed on every board read** — fine for a few hundred trends a day; precompute if it grows.
+- **First request after a drop opens** may still show the previous drop (stale-while-revalidate); ordering
+  from it is refused by `isOpen()`.
+- **`pnpm dev` leaves orphan processes** when stopped from a job runner; check `ps` for `node dist/main.js`
+  under nowcore before trusting a dev run.
+- Unchanged: 12 MB global body limit (T-096), frames served by the API (T-035), refunds recorded not issued.
+
+**Verified:** two consecutive uncached full runs; the clock opening and closing on the live stack; waitlist
+join and one-click unsubscribe in Chrome; countdown correct with the device clock an hour fast; live ingest;
+radar shortlist and promote in Chrome; motion-check on the production build.
+
+**Not verified:** Reddit or YouTube live; two API instances ticking at once (the lock is reasoned about, not
+raced); a real email provider; a real phone.
 
 ---
 

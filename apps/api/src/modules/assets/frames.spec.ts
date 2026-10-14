@@ -18,7 +18,12 @@ describe('frames', () => {
     );
     await writeFile(join(dir, 'secret.txt'), 'nope');
     app = await createApp(
-      readEnv({ RECONCILE: 'off', QUEUE_PREFIX: 'test-api', FRAMES_DIR: dir }),
+      readEnv({
+        RECONCILE: 'off',
+        QUEUE_PREFIX: 'test-api',
+        DROP_CLOCK: 'off',
+        FRAMES_DIR: dir,
+      }),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();

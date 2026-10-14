@@ -11,7 +11,8 @@ import { QUEUES } from './queues.js';
 import { LocalFrameStore } from './render/frame-store.js';
 import { FRAME_STORE, RenderProcessor } from './render.processor.js';
 import { SystemProcessor } from './system.processor.js';
-import { MAILER, POD_PROVIDER, WORKER_ENV } from './tokens.js';
+import { MAILER, POD_PROVIDER, TREND_FETCH, WORKER_ENV } from './tokens.js';
+import { TrendsProcessor } from './trends/trends.processor.js';
 
 @Module({})
 export class WorkerModule {
@@ -28,6 +29,7 @@ export class WorkerModule {
           { name: QUEUE.render },
           { name: QUEUE.pod },
           { name: QUEUE.notify },
+          { name: QUEUE.trends },
         ),
       ],
       providers: [
@@ -37,6 +39,8 @@ export class WorkerModule {
         RenderProcessor,
         PodSubmitProcessor,
         NotifyProcessor,
+        TrendsProcessor,
+        { provide: TREND_FETCH, useValue: fetch },
         // Local until the hosted Supabase project exists (T-035).
         { provide: FRAME_STORE, useValue: new LocalFrameStore(env.FRAMES_DIR) },
         // Printrove joins here when its adapter exists (T-059).

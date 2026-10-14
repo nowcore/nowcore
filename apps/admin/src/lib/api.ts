@@ -38,7 +38,7 @@ export async function get<T>(path: string, schema: z.ZodType<T>): Promise<T> {
 }
 
 export type WriteResult =
-  | { ok: true }
+  | { ok: true; data?: unknown }
   | {
       ok: false;
       message: string;
@@ -56,7 +56,10 @@ export async function send(
     method,
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
-  if (res.ok) return { ok: true };
+  if (res.ok)
+    return res.status === 204
+      ? { ok: true }
+      : { ok: true, data: await res.json().catch(() => undefined) };
   const json = (await res.json().catch(() => ({}))) as {
     message?: string;
     problems?: string[];

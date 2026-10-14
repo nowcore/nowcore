@@ -9,6 +9,7 @@ export const QUEUE = {
   pod: 'pod',
   notify: 'notify',
   render: 'render',
+  trends: 'trends',
 } as const;
 
 export const PodSubmitJob = z.object({ orderId: z.uuid() });
@@ -36,3 +37,7 @@ export const RenderJob = z.object({
   rev: z.string().regex(/^[a-z0-9]{4,16}$/),
 });
 export type RenderJob = z.infer<typeof RenderJob>;
+
+/** A drop opened: alert the waitlist, once per subscriber (T-083). */
+export const DropOpenJob = z.object({ dropId: z.uuid() });
+export type DropOpenJob = z.infer<typeof DropOpenJob>;

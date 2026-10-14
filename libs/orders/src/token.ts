@@ -23,3 +23,25 @@ export function validOrderToken(
   const got = Buffer.from(token);
   return want.length === got.length && timingSafeEqual(want, got);
 }
+
+/**
+ * The unsubscribe link's token. Same construction as an order token with its
+ * own purpose prefix, so one can never be replayed as the other.
+ */
+export function listToken(secret: string, email: string): string {
+  return createHmac('sha256', secret)
+    .update(`unsubscribe:${email.toLowerCase()}`)
+    .digest('hex')
+    .slice(0, 32);
+}
+
+export function validListToken(
+  secret: string,
+  email: string,
+  token: string | undefined,
+): boolean {
+  if (!token) return false;
+  const want = Buffer.from(listToken(secret, email));
+  const got = Buffer.from(token);
+  return want.length === got.length && timingSafeEqual(want, got);
+}

@@ -1,9 +1,5 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import {
-  AdminOrderDetail,
-  AdminOrderList,
-  Session,
-} from '@nowcore/shared';
+import { AdminOrderDetail, AdminOrderList, Session } from '@nowcore/shared';
 import { createApp } from '../../create-app.js';
 import { readEnv } from '../../env.js';
 import { PrismaService } from '../../prisma.service.js';
@@ -42,7 +38,11 @@ describe('admin', () => {
 
   beforeAll(async () => {
     app = await createApp(
-      readEnv({ RECONCILE: 'off', QUEUE_PREFIX: 'test-api' }),
+      readEnv({
+        RECONCILE: 'off',
+        QUEUE_PREFIX: 'test-api',
+        DROP_CLOCK: 'off',
+      }),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();

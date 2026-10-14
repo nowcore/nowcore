@@ -1,6 +1,11 @@
 import { Inject, Injectable, type OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { QUEUE, type NotifyJob, type PodSubmitJob } from '@nowcore/shared';
+import {
+  QUEUE,
+  type DropOpenJob,
+  type NotifyJob,
+  type PodSubmitJob,
+} from '@nowcore/shared';
 import { ENV, type Env } from '../../env.js';
 
 function connection(url: string) {
@@ -21,7 +26,7 @@ function connection(url: string) {
 @Injectable()
 export class FulfilmentQueue implements OnModuleDestroy {
   private readonly pod: Queue<PodSubmitJob>;
-  private readonly notify: Queue<NotifyJob>;
+  private readonly notify: Queue<NotifyJob | DropOpenJob>;
 
   constructor(@Inject(ENV) env: Env) {
     this.pod = new Queue(QUEUE.pod, {
@@ -62,6 +67,19 @@ export class FulfilmentQueue implements OnModuleDestroy {
         jobId: `${kind}-${orderId}`,
         attempts: 5,
         backoff: { type: 'exponential', delay: 30_000 },
+      },
+    );
+  }
+
+  /** One alert run per drop — the job id makes a second "open" a no-op. */
+  async dropOpened(dropId: string): Promise<void> {
+    await this.notify.add(
+      'drop-open',
+      { dropId },
+      {
+        jobId: `drop-open-${dropId}`,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 60_000 },
       },
     );
   }

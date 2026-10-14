@@ -35,6 +35,13 @@ const Env = z.object({
     .string()
     .regex(/^[a-z0-9-]+$/)
     .default('nowcore'),
+  /** Hourly radar ingest (T-074). Off in tests: they must not call the internet. */
+  TRENDS: z.enum(['on', 'off']).default('on'),
+  /** Reddit app-only OAuth; without both, Reddit is not ingested. */
+  REDDIT_CLIENT_ID: z.string().optional(),
+  REDDIT_CLIENT_SECRET: z.string().optional(),
+  /** YouTube Data API v3 key; without it, YouTube is not ingested. */
+  YOUTUBE_API_KEY: z.string().optional(),
   /** Uploaded artwork, shared with the API; local stand-in for Supabase Storage (T-035). */
   STORAGE_DIR: z
     .string()

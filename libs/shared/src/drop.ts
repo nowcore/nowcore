@@ -60,3 +60,15 @@ const DROP_TRANSITIONS: Readonly<Record<DropStatus, readonly DropStatus[]>> = {
 export function canDropTransition(from: DropStatus, to: DropStatus): boolean {
   return DROP_TRANSITIONS[from].includes(to);
 }
+
+/**
+ * Whether a drop takes orders right now. Its time, not only its status: the
+ * drop clock runs once a minute and can be late, and the close is the promise
+ * (T-084) — a cart or order a second after closesAt is refused either way.
+ */
+export function isOpen(
+  drop: { status: DropStatus; closesAt: Date | null },
+  now = new Date(),
+): boolean {
+  return drop.status === 'LIVE' && (!drop.closesAt || drop.closesAt > now);
+}

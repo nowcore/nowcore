@@ -31,7 +31,11 @@ describe('orders', () => {
 
   beforeAll(async () => {
     app = await createApp(
-      readEnv({ RECONCILE: 'off', QUEUE_PREFIX: 'test-api' }),
+      readEnv({
+        RECONCILE: 'off',
+        QUEUE_PREFIX: 'test-api',
+        DROP_CLOCK: 'off',
+      }),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
@@ -265,6 +269,32 @@ describe('orders', () => {
       where: { sku: `${tag}-TEE-BLK-XL` },
       data: { soldOut: false, pricePaise: 79900 },
     });
+  });
+
+  it('refuses a drop past its close even while the clock has not archived it', async () => {
+    const cartId = await cartWith(['M', 1]);
+    await db.drop.update({
+      where: { id: dropId },
+      data: { closesAt: new Date(Date.now() - 1000) },
+    });
+    try {
+      const res = await place(cartId);
+      expect(res.statusCode).toBe(409);
+      expect(res.json().message).toMatch(/this drop has closed/);
+      const cart = CartView.parse(
+        (await app.inject({ method: 'GET', url: `/carts/${cartId}` })).json(),
+      );
+      expect(cart.lines[0]?.available).toBe(false);
+      expect(cart.subtotalPaise).toBe(0);
+      const add = await app.inject({
+        method: 'PUT',
+        url: `/carts/${cartId}/items`,
+        payload: { sku: `${tag}-TEE-BLK-L`, quantity: 1 },
+      });
+      expect(add.statusCode).toBe(409);
+    } finally {
+      await db.drop.update({ where: { id: dropId }, data: { closesAt: null } });
+    }
   });
 
   it('refuses COD until a prepaid order has been delivered to that phone', async () => {

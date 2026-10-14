@@ -3,6 +3,8 @@ import { AdminController, AdminSessionController } from './admin.controller.js';
 import { AdminDropsController } from './admin-drops.controller.js';
 import { AdminDropsService } from './admin-drops.service.js';
 import { AdminOrdersService } from './admin-orders.service.js';
+import { AdminTrendsService } from './admin-trends.service.js';
+import { DropClockService } from './drop-clock.service.js';
 import { AuthService } from './auth.service.js';
 import { OperatorGuard } from './operator.guard.js';
 
@@ -13,6 +15,8 @@ import { OperatorGuard } from './operator.guard.js';
     OperatorGuard,
     AdminOrdersService,
     AdminDropsService,
+    DropClockService,
+    AdminTrendsService,
   ],
 })
 export class AdminModule {}

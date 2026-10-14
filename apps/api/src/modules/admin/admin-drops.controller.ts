@@ -12,6 +12,9 @@ import {
 } from '@nestjs/common';
 import {
   CreateDrop,
+  DecideTrend,
+  PromoteTrend,
+  type AdminRadar,
   UpdateDrop,
   UpdateVariant,
   type AdminCustomer,
@@ -19,6 +22,7 @@ import {
   type AdminDropRow,
 } from '@nowcore/shared';
 import { AdminDropsService } from './admin-drops.service.js';
+import { AdminTrendsService } from './admin-trends.service.js';
 import { OperatorGuard } from './operator.guard.js';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -51,7 +55,26 @@ function parse<T>(
 @Controller('admin')
 @UseGuards(OperatorGuard)
 export class AdminDropsController {
-  constructor(private readonly drops: AdminDropsService) {}
+  constructor(
+    private readonly drops: AdminDropsService,
+    private readonly trends: AdminTrendsService,
+  ) {}
+
+  @Get('trends')
+  radar(): Promise<AdminRadar> {
+    return this.trends.board();
+  }
+
+  @Post('trends/decide')
+  @HttpCode(204)
+  decide(@Body() body: unknown): Promise<void> {
+    return this.trends.decide(parse(DecideTrend, body));
+  }
+
+  @Post('trends/promote')
+  promote(@Body() body: unknown): Promise<{ slug: string }> {
+    return this.trends.promote(parse(PromoteTrend, body).key);
+  }
 
   @Get('drops')
   list(): Promise<AdminDropRow[]> {

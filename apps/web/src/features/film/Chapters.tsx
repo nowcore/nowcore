@@ -1,6 +1,7 @@
 import { formatInr, type DropSummary, type DropView } from '@nowcore/shared';
 import { Beat, CanvasSequence, Marquee, ScrollStage } from '@nowcore/motion';
 import { trends, wall } from '../../lib/placeholders';
+import { WaitlistForm } from '../waitlist/WaitlistForm';
 import { chapter } from './copy';
 import { ChapterHead } from './Kicker';
 
@@ -347,35 +348,7 @@ export function TakeIt({ drop }: { drop: DropView }) {
               size="film"
             />
           </div>
-          <form
-            action="/api/waitlist"
-            method="post"
-            className="flex flex-[1_1_380px] flex-col gap-3.5"
-          >
-            <label htmlFor="nc-email" className={`${mono} text-smoke`}>
-              Drop alerts
-            </label>
-            <div className="flex items-center gap-3 border-b border-steel pb-3">
-              <input
-                id="nc-email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                className="min-h-11 min-w-0 flex-1 bg-transparent text-[17px] text-paper outline-none placeholder:text-ghost"
-              />
-              <button
-                type="submit"
-                className="min-h-11 rounded-full bg-accent px-[22px] text-sm font-medium text-void"
-              >
-                Notify me
-              </button>
-            </div>
-            <p className="text-xs text-ghost">
-              One message per drop. Nothing else, ever.
-            </p>
-          </form>
+          <WaitlistForm />
         </div>
         <nav
           aria-label="Footer"

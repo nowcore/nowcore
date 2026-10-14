@@ -16,6 +16,7 @@ import { ConsoleMailer } from './mailer.js';
 describe('fulfilment', () => {
   const env = readEnv({
     QUEUE_PREFIX: `test-${Math.random().toString(36).slice(2, 10)}`,
+    TRENDS: 'off',
   });
   const mailer = new ConsoleMailer();
   const number = 900 + Math.floor(Math.random() * 99);

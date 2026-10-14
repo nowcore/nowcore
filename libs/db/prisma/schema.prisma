@@ -81,7 +81,8 @@ model Drop {
 
   products Product[]
   trends   Trend[]
-  waitlist WaitlistSubscription[]
+  clusters TrendCluster[]
+  alerts   DropAlert[]
 
   @@index([status, opensAt])
   @@map("drops")
@@ -286,8 +287,13 @@ model Trend {
   source     String
   externalId String      @map("external_id")
   term       String
+  /// 0–100, on one log scale across sources (libs/shared trends.ts)
   score      Int
+  url        String?
+  /// First seen — the evidence time.
   capturedAt DateTime    @map("captured_at")
+  /// Last seen by an ingest run; the radar's 24 h window reads this.
+  seenAt     DateTime    @default(now()) @map("seen_at")
   status     TrendStatus @default(NEW)
   dropId     String?     @map("drop_id") @db.Uuid
 
@@ -295,23 +301,55 @@ model Trend {
 
   @@unique([source, externalId])
   @@index([status, score])
+  @@index([seenAt])
   @@map("trends")
+}
+
+/// The operator's decision on a radar key (T-080). Keys are computed from
+/// trend text at read time; this is the only state the board keeps.
+model TrendCluster {
+  key       String      @id
+  status    TrendStatus
+  dropId    String?     @map("drop_id") @db.Uuid
+  decidedAt DateTime    @default(now()) @map("decided_at")
+
+  drop Drop? @relation(fields: [dropId], references: [id])
+
+  @@map("trend_clusters")
 }
 
 // ----------------------------------------------------------------- retention
 
+/// Drop alerts (FR-8). One row per email — the old (email, drop_id) unique let
+/// NULL drop_ids through, because Postgres treats NULLs as distinct: one email
+/// subscribed twice to "the next drop" was two rows (found 14 Oct 2026).
 model WaitlistSubscription {
-  id         String    @id @default(uuid()) @db.Uuid
-  email      String
-  /// Null = the next drop, whichever it is.
-  dropId     String?   @map("drop_id") @db.Uuid
-  notifiedAt DateTime? @map("notified_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  id             String      @id @default(uuid()) @db.Uuid
+  email          String      @unique
+  createdAt      DateTime    @default(now()) @map("created_at")
+  /// Set by the unsubscribe link. Never deleted: the ledger below must keep
+  /// proving who was told what.
+  unsubscribedAt DateTime?   @map("unsubscribed_at")
+  alerts         DropAlert[]
 
-  drop Drop? @relation(fields: [dropId], references: [id])
-
-  @@unique([email, dropId])
   @@map("waitlist_subscriptions")
+}
+
+/// The ledger behind "one message per drop. Nothing else, ever." A row is
+/// written before the email is sent; the unique pair is what stops a retried
+/// or duplicated job from mailing the same person twice for one drop.
+model DropAlert {
+  id             String   @id @default(uuid()) @db.Uuid
+  subscriptionId String   @map("subscription_id") @db.Uuid
+  dropId         String   @map("drop_id") @db.Uuid
+  sentAt         DateTime @default(now()) @map("sent_at")
+
+  subscription WaitlistSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  drop         Drop                 @relation(fields: [dropId], references: [id])
+
+  @@unique([subscriptionId, dropId])
+  @@index([dropId])
+  @@map("drop_alerts")
 }
 
 model WallPost {

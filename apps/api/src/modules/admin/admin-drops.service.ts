@@ -17,6 +17,7 @@ import {
   BLANK_SIZES,
   BLANKS,
   canDropTransition,
+  TrendSource,
   ChapterKey,
   Chapters,
   makeSku,
@@ -33,6 +34,7 @@ import {
 import type { z } from 'zod';
 import { ENV, type Env } from '../../env.js';
 import { PrismaService } from '../../prisma.service.js';
+import { FulfilmentQueue } from '../fulfilment/fulfilment.queue.js';
 import { POD_PROVIDER } from '../fulfilment/pod.module.js';
 import { assetUrl } from '../assets/asset-url.js';
 
@@ -47,7 +49,7 @@ const CLAIMED = [
 const MAX_ARTWORK = 8 * 1024 * 1024;
 const MIN_ARTWORK_PX = 600;
 
-const withProduct = {
+export const withProduct = {
   products: { include: { variants: true, assets: true } },
 } satisfies Prisma.DropInclude;
 type DropRow = Prisma.DropGetPayload<{ include: typeof withProduct }>;
@@ -74,6 +76,10 @@ function draftChapters(title: string, number: number) {
 }
 
 /** The drops side of the admin (T-064–T-068, T-072, T-073). */
+
+/** Any constant both openers agree on; pg advisory locks are keyed by a bigint. */
+const OPEN_LOCK = 40142026;
+
 @Injectable()
 export class AdminDropsService implements OnModuleDestroy {
   private readonly render: Queue<RenderJob>;
@@ -82,6 +88,7 @@ export class AdminDropsService implements OnModuleDestroy {
     private readonly db: PrismaService,
     @Inject(POD_PROVIDER) private readonly pod: PodProvider,
     @Inject(ENV) private readonly env: Env,
+    private readonly queue: FulfilmentQueue,
   ) {
     const u = new URL(env.REDIS_URL);
     this.render = new Queue(QUEUE.render, {
@@ -99,7 +106,7 @@ export class AdminDropsService implements OnModuleDestroy {
    * by the caller's outcome: the storefront being down must not stop an
    * operator closing a drop. Its own 30 s cache is the fallback.
    */
-  private refreshStorefront(): void {
+  refreshStorefront(): void {
     void fetch(this.env.WEB_REVALIDATE_URL, {
       method: 'POST',
       headers: { 'x-revalidate-secret': this.env.REVALIDATE_SECRET },
@@ -135,6 +142,17 @@ export class AdminDropsService implements OnModuleDestroy {
       ...(await this.row(d)),
       problems: problemList.length,
       problemList,
+      evidence: (
+        await this.db.trend.findMany({
+          where: { dropId: d.id },
+          orderBy: { score: 'desc' },
+        })
+      ).map((t) => ({
+        source: TrendSource.parse(t.source),
+        term: t.term,
+        score: t.score,
+        url: t.url,
+      })),
       chapters: Chapters.safeParse(d.chapters).success
         ? Chapters.parse(d.chapters)
         : [],
@@ -445,23 +463,44 @@ export class AdminDropsService implements OnModuleDestroy {
       });
       return;
     }
-    // One drop at a time is the design; the operator closes the last one on purpose.
-    const live = await this.db.drop.findFirst({
-      where: { status: 'LIVE', id: { not: d.id } },
-    });
-    if (live)
+    const opened = await this.open(d, now);
+    if (opened !== true)
       throw new ConflictException(
-        `Drop ${String(live.number).padStart(3, '0')} is live. Close it first.`,
+        `Drop ${String(opened).padStart(3, '0')} is live. Close it first.`,
       );
-    const closesAt =
-      d.closesAt && d.closesAt > now
-        ? d.closesAt
-        : new Date(now.getTime() + 72 * 3_600_000);
-    await this.db.drop.update({
-      where: { id: d.id },
-      data: { status: 'LIVE', opensAt: now, closesAt },
+  }
+
+  /**
+   * Make a drop live — for an operator's "open now" and for the drop clock.
+   * One drop at a time is the design, and the check and the write sit under
+   * one advisory lock so the clock and an operator cannot both open one in
+   * the same instant. Returns true, or the number of the drop already live.
+   */
+  async open(
+    d: { id: string; closesAt: Date | null },
+    now: Date,
+  ): Promise<true | number> {
+    const live = await this.db.$transaction(async (tx) => {
+      // executeRaw: Prisma cannot deserialise the void this function returns.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${OPEN_LOCK}::bigint)`;
+      const live = await tx.drop.findFirst({
+        where: { status: 'LIVE', id: { not: d.id } },
+      });
+      if (live) return live.number;
+      const closesAt =
+        d.closesAt && d.closesAt > now
+          ? d.closesAt
+          : new Date(now.getTime() + 72 * 3_600_000);
+      await tx.drop.update({
+        where: { id: d.id },
+        data: { status: 'LIVE', opensAt: now, closesAt },
+      });
+      return null;
     });
+    if (live !== null) return live;
     this.refreshStorefront();
+    await this.queue.dropOpened(d.id);
+    return true;
   }
 
   async close(slug: string, now = new Date()): Promise<void> {

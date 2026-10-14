@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { CartView, SetItem } from '@nowcore/shared';
+import { isOpen, type CartView, type SetItem } from '@nowcore/shared';
 import { ENV, type Env } from '../../env.js';
 import { PrismaService } from '../../prisma.service.js';
 import { assetUrl } from '../assets/asset-url.js';
@@ -51,7 +51,7 @@ export class CartService {
           size: v.size,
           pricePaise: v.pricePaise,
           quantity: item.quantity,
-          available: !v.soldOut && v.product.drop.status === 'LIVE',
+          available: !v.soldOut && isOpen(v.product.drop),
           still: assetUrl(this.env.ASSET_BASE_URL, v.mockupUrl),
         };
       })
@@ -81,7 +81,7 @@ export class CartService {
       });
       return this.view(id);
     }
-    if (variant.product.drop.status !== 'LIVE')
+    if (!isOpen(variant.product.drop))
       throw new ConflictException('this drop is not open');
     if (variant.soldOut) throw new ConflictException('that size has sold out');
 

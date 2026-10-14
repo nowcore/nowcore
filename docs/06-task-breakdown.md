@@ -222,19 +222,19 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 **6 ideal days**
 
-| ID    | Task                                                               | Est  | D:           |
-| ----- | ------------------------------------------------------------------ | ---- | ------------ |
-| T-074 | `trend.ingest` job framework + per-source rate limiting            | 0.6d | T-026        |
-| T-075 | Reddit source                                                      | 0.5d | T-074        |
-| T-076 | Hacker News (Algolia) source                                       | 0.3d | T-074        |
-| T-077 | Google Trends daily source                                         | 0.5d | T-074        |
-| T-078 | YouTube trending source                                            | 0.4d | T-074        |
-| T-079 | Scoring + cross-source dedupe; the two-source rule from `new-drop` | 0.8d | T-075–T-078  |
-| T-080 | Radar board in admin: shortlist, reject, promote                   | 0.9d | T-079, T-063 |
-| T-081 | Promote trend → draft drop carrying its evidence                   | 0.5d | T-080, T-064 |
-| T-082 | `schedule.drops` job: open at `opensAt`, archive at `closesAt`     | 0.5d | T-064        |
-| T-083 | Waitlist notification on open — idempotent on drop id              | 0.5d | T-082        |
-| T-084 | Countdown + edition counter, server-authoritative                  | 0.5d | T-082        |
+| ID    | Task                                                                  | Est  | D:           |
+| ----- | --------------------------------------------------------------------- | ---- | ------------ |
+| T-074 | ✅ `trend.ingest` job framework + per-source rate limiting            | 0.6d | T-026        |
+| T-075 | 🟡 Reddit source                                                      | 0.5d | T-074        |
+| T-076 | ✅ Hacker News (Algolia) source                                       | 0.3d | T-074        |
+| T-077 | ✅ Google Trends daily source                                         | 0.5d | T-074        |
+| T-078 | 🟡 YouTube trending source                                            | 0.4d | T-074        |
+| T-079 | ✅ Scoring + cross-source dedupe; the two-source rule from `new-drop` | 0.8d | T-075–T-078  |
+| T-080 | ✅ Radar board in admin: shortlist, reject, promote                   | 0.9d | T-079, T-063 |
+| T-081 | ✅ Promote trend → draft drop carrying its evidence                   | 0.5d | T-080, T-064 |
+| T-082 | ✅ `schedule.drops` job: open at `opensAt`, archive at `closesAt`     | 0.5d | T-064        |
+| T-083 | ✅ Waitlist notification on open — idempotent on drop id              | 0.5d | T-082        |
+| T-084 | ✅ Countdown + edition counter, server-authoritative                  | 0.5d | T-082        |
 
 **done:** a signal goes from radar to live drop in under 4 hours, end to end.
 
