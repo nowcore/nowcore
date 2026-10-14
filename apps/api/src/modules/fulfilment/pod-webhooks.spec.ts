@@ -10,6 +10,7 @@ describe('printer webhooks', () => {
     RECONCILE: 'off',
     QUEUE_PREFIX: 'test-api',
     DROP_CLOCK: 'off',
+    RATE_LIMIT: 'off',
   });
   const printer = new SandboxPrinter(env.POD_SANDBOX_SECRET);
   let app: NestFastifyApplication;

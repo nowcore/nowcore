@@ -18,7 +18,7 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 4 — Admin             | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
 | **Phase 5 — Trend radar**   | ▓▓▓▓▓▓▓▓░░ 9 / 11 tasks · 2 🟡               |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
-| Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
+| Phase 7 — Hardening         | ▓░░░░░░░░░ 1 / 11 tasks                      |
 
 **Next up:** Phase 6 — accounts (Supabase Auth, phone OTP or email; order history). It needs the hosted
 Supabase project (T-017). Until that exists, Phase 7 hardening items that are local — per-route body limits
@@ -45,6 +45,45 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-14 — Body limits and rate limits · T-101
+
+The API no longer accepts 12 MB on every route, and the routes a script would hammer are limited per buyer.
+
+**What landed.**
+
+- **Body limits**: 64 KB by default; artwork (base64 PNG) keeps 12 MB.
+- **Rate limits** (`@fastify/rate-limit`, counters in Redis so they hold across instances, failing open if
+  Redis is down): orders 10/min, payment verify 20, cart create 30, cart lines 60, waitlist join and
+  unsubscribe 5, operator sign-in 5, webhooks 600 (flood guard only — providers retry, and a refused genuine
+  webhook is an unseen payment). A 429 says how many seconds to wait; the waitlist form says "Too many tries".
+- **One table**, `apps/api/src/limits.ts`. The API refuses to start if it names a route that does not exist.
+- **The buyer's IP, not the storefront's.** Every buyer request reaches the API from the Next server, so a
+  per-IP limit would have been one limit for the whole store — ten orders a minute, total. Web and admin
+  forward the buyer's IP as `x-client-ip` with `BFF_SECRET`; the API uses it only when the secret matches.
+  `TRUST_PROXY` (hops) for the load balancer in front of the API; `BFF_SECRET` refused in production if
+  left at the local default. `RATE_LIMIT=off` in tests.
+
+**Counts:** 10 projects, 142 tests (API 58).
+
+**Watched failing before being trusted:**
+
+- Rate config not attached, artwork body override removed, the unknown-route check disabled, the forwarded
+  IP trusted without the secret, the forwarded IP ignored: each failed its test.
+- **In Chrome**: a waitlist join from `127.0.0.1` was counted under `::ffff:127.0.0.1` (the browser) while
+  Next reaches the API on `::1` — the forwarded IP arrives through the real server action. At the limit the
+  form showed "Too many tries. Wait a minute and try again."
+
+**Carried forward:**
+
+- **Production must set `TRUST_PROXY` and `BFF_SECRET`**, and `x-forwarded-for` at the storefront must come
+  from the platform (Vercel sets it), not the client.
+- Limits are guesses until the load test (T-096) and a real drop say otherwise.
+- `GET /orders/:reference?t=` is not limited: the token is 128 bits.
+
+**Verified:** full uncached runs; the limit and its message in Chrome.
 
 ---
 

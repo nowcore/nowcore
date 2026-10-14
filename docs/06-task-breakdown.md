@@ -271,6 +271,7 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 | T-098 | Runbook: provider outage, stuck order, failed drop open               | 0.5d | T-060 |
 | T-099 | Production deploy — Vercel + Railway/Fly, both Mumbai                 | 0.8d | T-091 |
 | T-100 | Dry-run drop end to end on production with real money                 | 0.3d | T-099 |
+| T-101 | ✅ Per-route body limits and rate limits (05 §6)                      | 0.4d | T-052 |
 
 **done:** T-100 passes. That is launch.
 

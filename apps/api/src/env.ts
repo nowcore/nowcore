@@ -92,6 +92,15 @@ const Env = z
 
     /** Poll the provider for orders a webhook never confirmed (T-057). Off in tests. */
     RECONCILE: z.enum(['on', 'off']).default('on'),
+    /** Per-IP rate limits (limits.ts). Off in tests, which send everything from one address. */
+    RATE_LIMIT: z.enum(['on', 'off']).default('on'),
+    /**
+     * Shared with web and admin. Their server actions forward the buyer's IP
+     * signed with it; anyone else's x-client-ip is ignored (limits.ts).
+     */
+    BFF_SECRET: z.string().min(16).default('local-dev-bff-secret-0000'),
+    /** Proxy hops in front of the API (0 locally). Without it every buyer shares the proxy's IP and rate limit. */
+    TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
     /** Open scheduled drops and close expired ones every minute (T-082). Off in tests. */
     DROP_CLOCK: z.enum(['on', 'off']).default('on'),
   })
@@ -123,6 +132,13 @@ const Env = z
           code: 'custom',
           path: ['POD'],
           message: 'the sandbox printer can never fulfil real orders',
+        });
+      }
+      if (env.BFF_SECRET.startsWith('local-dev-')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['BFF_SECRET'],
+          message: 'set a real secret in production',
         });
       }
       if (env.ORDER_TOKEN_SECRET.startsWith('local-dev-')) {

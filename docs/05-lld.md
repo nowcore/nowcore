@@ -261,4 +261,8 @@ worst failure in the system — taking money for something that cannot be made.
 - Artwork uploads: content-type and magic-byte checked, size-capped, served from Storage, never executed.
 - Admin routes require an operator role claim verified server-side on every request — never a client check.
 - PII (address, phone) is never written to logs or Sentry breadcrumbs.
-- Rate limits on `/orders`, `/waitlist` and `/webhooks/*`.
+- Rate limits on `/orders`, `/waitlist` and `/webhooks/*` — **built (T-101)**, plus carts and operator
+  sign-in. One table, `apps/api/src/limits.ts`; the API will not start if it names a route that does not
+  exist. Per client IP per minute, counted in Redis, failing open if Redis is down. Web and admin call the
+  API from their servers, so they forward the buyer's IP as `x-client-ip` signed with `BFF_SECRET`; without
+  the secret the header is ignored. Bodies are capped at 64 KB except artwork (12 MB).

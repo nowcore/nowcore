@@ -2,6 +2,7 @@
 import { PlacedOrder } from '@nowcore/shared';
 import { env } from '../../env';
 import { cartId } from '../cart/cart';
+import { forwarded } from '../../lib/forwarded';
 
 export type PlaceResult =
   | { ok: true; placed: PlacedOrder }
@@ -58,7 +59,7 @@ export async function placeOrder(
   };
   const res = await fetch(`${env.API_URL}/orders`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await forwarded()) },
     body: JSON.stringify(body),
     cache: 'no-store',
   });
@@ -84,7 +85,7 @@ export async function confirmPayment(
 ): Promise<{ ok: boolean }> {
   const res = await fetch(`${env.API_URL}/orders/${reference}/verify`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await forwarded()) },
     body: JSON.stringify(payment),
     cache: 'no-store',
   });

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { CartView, MAX_PER_LINE } from '@nowcore/shared';
 import { env } from '../../env';
 import { CART_COOKIE, currentCart } from './cart';
+import { forwarded } from '../../lib/forwarded';
 
 export type CartResult =
   { ok: true; count: number } | { ok: false; error: string };
@@ -13,6 +14,7 @@ async function ensureCart(): Promise<string> {
   if (existing) return existing.id;
   const res = await fetch(`${env.API_URL}/carts`, {
     method: 'POST',
+    headers: await forwarded(),
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`could not create a cart: ${res.status}`);
@@ -34,7 +36,7 @@ async function put(
 ): Promise<CartResult> {
   const res = await fetch(`${env.API_URL}/carts/${id}/items`, {
     method: 'PUT',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await forwarded()) },
     body: JSON.stringify({ sku, quantity }),
     cache: 'no-store',
   });

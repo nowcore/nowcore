@@ -22,6 +22,7 @@ describe('frames', () => {
         RECONCILE: 'off',
         QUEUE_PREFIX: 'test-api',
         DROP_CLOCK: 'off',
+        RATE_LIMIT: 'off',
         FRAMES_DIR: dir,
       }),
     );

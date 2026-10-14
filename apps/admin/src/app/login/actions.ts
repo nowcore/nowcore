@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { Session } from '@nowcore/shared';
 import { env } from '../../env';
 import { SESSION_COOKIE } from '../../lib/api';
+import { forwarded } from '../../lib/forwarded';
 
 export async function signIn(
   _prev: string | null,
@@ -11,7 +12,7 @@ export async function signIn(
 ): Promise<string | null> {
   const res = await fetch(`${env.API_URL}/admin/session`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await forwarded()) },
     body: JSON.stringify({
       email: String(form.get('email') ?? ''),
       password: String(form.get('password') ?? ''),

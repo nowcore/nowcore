@@ -9,6 +9,7 @@ describe('waitlist', () => {
     RECONCILE: 'off',
     QUEUE_PREFIX: 'test-api',
     DROP_CLOCK: 'off',
+    RATE_LIMIT: 'off',
   });
   let app: NestFastifyApplication;
   let db: PrismaService;

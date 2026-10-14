@@ -35,6 +35,7 @@ describe('orders', () => {
         RECONCILE: 'off',
         QUEUE_PREFIX: 'test-api',
         DROP_CLOCK: 'off',
+        RATE_LIMIT: 'off',
       }),
     );
     await app.init();

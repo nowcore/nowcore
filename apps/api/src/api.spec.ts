@@ -17,7 +17,11 @@ describe('api', () => {
 
   it('is ready when the database answers', async () => {
     const app = await createApp(
-      readEnv({ QUEUE_PREFIX: 'test-api', DROP_CLOCK: 'off' }),
+      readEnv({
+        QUEUE_PREFIX: 'test-api',
+        DROP_CLOCK: 'off',
+        RATE_LIMIT: 'off',
+      }),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
@@ -32,7 +36,11 @@ describe('api', () => {
   it('keeps the exact request bytes, so a webhook HMAC can match', async () => {
     // A probe route on the real app: what a webhook handler will see.
     const app = await createApp(
-      readEnv({ QUEUE_PREFIX: 'test-api', DROP_CLOCK: 'off' }),
+      readEnv({
+        QUEUE_PREFIX: 'test-api',
+        DROP_CLOCK: 'off',
+        RATE_LIMIT: 'off',
+      }),
     );
     app
       .getHttpAdapter()

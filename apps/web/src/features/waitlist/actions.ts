@@ -1,6 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { env } from '../../env';
+import { forwarded } from '../../lib/forwarded';
 
 export type JoinResult = { ok: boolean; message: string } | null;
 
@@ -12,12 +13,17 @@ export async function joinWaitlist(
   const email = String(form.get('email') ?? '').trim();
   const res = await fetch(`${env.API_URL}/waitlist`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await forwarded()) },
     body: JSON.stringify({ email }),
     cache: 'no-store',
   });
   if (res.status === 400)
     return { ok: false, message: 'That does not look like an email address.' };
+  if (res.status === 429)
+    return {
+      ok: false,
+      message: 'Too many tries. Wait a minute and try again.',
+    };
   if (!res.ok)
     return {
       ok: false,
@@ -35,7 +41,7 @@ export async function unsubscribe(
 ): Promise<boolean> {
   const res = await fetch(`${env.API_URL}/waitlist/unsubscribe`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(await forwarded()) },
     body: JSON.stringify({ email, token }),
     cache: 'no-store',
   });

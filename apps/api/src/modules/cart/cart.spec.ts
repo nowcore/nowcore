@@ -8,7 +8,11 @@ describe('cart', () => {
   let app: NestFastifyApplication;
   beforeAll(async () => {
     app = await createApp(
-      readEnv({ QUEUE_PREFIX: 'test-api', DROP_CLOCK: 'off' }),
+      readEnv({
+        QUEUE_PREFIX: 'test-api',
+        DROP_CLOCK: 'off',
+        RATE_LIMIT: 'off',
+      }),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
