@@ -150,6 +150,37 @@ await drop({
   soldOut: SIZES,
 });
 
+/*
+ * The local operator. Created once and never overwritten, so a password
+ * changed later is not reset by the next seed. Same scrypt format the API
+ * verifies (apps/api/src/modules/admin/password.ts) — admin.spec.ts signs in
+ * as this operator, which is what keeps the two in step.
+ */
+const adminEmail = process.env['ADMIN_EMAIL'] ?? 'admin@nowcore.local';
+const adminPassword = process.env['ADMIN_PASSWORD'] ?? 'nowcore-local-admin';
+if (!(await db.operator.findUnique({ where: { email: adminEmail } }))) {
+  const { randomBytes, scryptSync } = await import('node:crypto');
+  const salt = randomBytes(16);
+  const hash = scryptSync(adminPassword, salt, 64, {
+    N: 32768,
+    r: 8,
+    p: 1,
+    maxmem: 64 * 1024 * 1024,
+  });
+  await db.operator.create({
+    data: {
+      email: adminEmail,
+      name: 'Operator',
+      passwordHash: `${salt.toString('hex')}:${hash.toString('hex')}`,
+    },
+  });
+  if (!process.env['ADMIN_PASSWORD']) {
+    console.log(
+      `operator ${adminEmail} created with the local default password — set ADMIN_PASSWORD anywhere real`,
+    );
+  }
+}
+
 const counts = {
   drops: await db.drop.count(),
   products: await db.product.count(),

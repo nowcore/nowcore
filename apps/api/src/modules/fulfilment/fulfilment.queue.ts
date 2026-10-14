@@ -24,18 +24,26 @@ export class FulfilmentQueue implements OnModuleDestroy {
   private readonly notify: Queue<NotifyJob>;
 
   constructor(@Inject(ENV) env: Env) {
-    this.pod = new Queue(QUEUE.pod, { connection: connection(env.REDIS_URL) });
+    this.pod = new Queue(QUEUE.pod, {
+      connection: connection(env.REDIS_URL),
+      prefix: env.QUEUE_PREFIX,
+    });
     this.notify = new Queue(QUEUE.notify, {
       connection: connection(env.REDIS_URL),
+      prefix: env.QUEUE_PREFIX,
     });
   }
 
-  async submit(orderId: string): Promise<void> {
+  /** `attempt` distinguishes an operator retry from the first submission (see AdminOrdersService.retry). */
+  async submit(orderId: string, attempt = 'first'): Promise<void> {
     await this.pod.add(
       'submit',
       { orderId },
       {
-        jobId: `submit-${orderId}`,
+        jobId:
+          attempt === 'first'
+            ? `submit-${orderId}`
+            : `submit-${orderId}-${attempt}`,
         // ~17 h of retries with exponential backoff before the order is marked
         // FULFILMENT_FAILED and an operator is told (docs/04 §6).
         attempts: 10,

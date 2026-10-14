@@ -14,6 +14,8 @@ export type {
   Address,
   Drop,
   DropStatus,
+  Operator,
+  OperatorSession,
   Order,
   OrderEvent,
   OrderItem,

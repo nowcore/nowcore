@@ -23,6 +23,13 @@
   --drop-accent: var(--signal);
   --drop-glow: rgb(215 255 62 / 0.1);
 
+  /* Operational status, admin only (docs/10). Told apart by lightness as
+     well as hue, so they still read for colour-blind operators. */
+  --status-info: #9be8ff;
+  --status-ok: #4ade80;
+  --status-warn: #ffb155;
+  --status-bad: #ff8a8a;
+
   --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-move: cubic-bezier(0.65, 0, 0.35, 1);
@@ -43,6 +50,10 @@
   --color-paper: var(--paper);
   --color-paper-dim: var(--paper-dim);
   --color-accent: var(--drop-accent);
+  --color-info: var(--status-info);
+  --color-ok: var(--status-ok);
+  --color-warn: var(--status-warn);
+  --color-bad: var(--status-bad);
 
   /* Font variables are set by next/font in each app's root layout:
      the geist package emits --font-geist-sans/mono, Instrument Serif is

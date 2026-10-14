@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma.service.js';
 
 /** Printer webhooks (T-061), against the real database. */
 describe('printer webhooks', () => {
-  const env = readEnv({ RECONCILE: 'off' });
+  const env = readEnv({ RECONCILE: 'off', QUEUE_PREFIX: 'test-api' });
   const printer = new SandboxPrinter(env.POD_SANDBOX_SECRET);
   let app: NestFastifyApplication;
   let db: PrismaService;

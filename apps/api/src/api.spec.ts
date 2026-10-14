@@ -16,7 +16,7 @@ describe('api', () => {
   });
 
   it('is ready when the database answers', async () => {
-    const app = await createApp(readEnv({}));
+    const app = await createApp(readEnv({ QUEUE_PREFIX: 'test-api' }));
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     const live = await app.inject({ method: 'GET', url: '/healthz' });
@@ -29,7 +29,7 @@ describe('api', () => {
 
   it('keeps the exact request bytes, so a webhook HMAC can match', async () => {
     // A probe route on the real app: what a webhook handler will see.
-    const app = await createApp(readEnv({}));
+    const app = await createApp(readEnv({ QUEUE_PREFIX: 'test-api' }));
     app
       .getHttpAdapter()
       .post(

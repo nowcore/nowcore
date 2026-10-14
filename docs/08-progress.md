@@ -14,15 +14,15 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 0 — Design and decide | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks · signed off 13 Oct |
 | Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
 | Phase 2 — The film          | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
-| **Phase 3 — Commerce**      | ▓▓▓▓▓▓▓▓▓░ 15 / 18 tasks · 2 🟡 · 1 blocked  |
-| Phase 4 — Admin             | ░░░░░░░░░░ 0 / 11 tasks                      |
+| Phase 3 — Commerce          | ▓▓▓▓▓▓▓▓▓░ 15 / 18 tasks · 2 🟡 · 1 blocked  |
+| **Phase 4 — Admin**         | ▓▓▓▓░░░░░░ 4 / 11 tasks                      |
 | Phase 5 — Trend radar       | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
-**Next up:** Phase 3 is done except what needs outside credentials. Phase 4 — the admin panel (T-063 on):
-operator sign-in, drop authoring, the variant → printer mapping UI and the publish check (T-067, T-068), and
-the live order board (T-069) — which is also where FULFILMENT_FAILED alerts finally reach a person.
+**Next up:** the admin's drops side — drop authoring (T-064), chapter CMS (T-065), artwork upload → turntable
+(T-066), the variant → printer mapping UI (T-067), the publish check (T-068), close early / extend (T-073),
+customers (T-072).
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
@@ -43,6 +43,67 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-14 — Admin, operations side: sign-in, dashboard, order board, order actions · T-063, T-069–T-071
+
+An operator can sign in, see what needs them, and fix it. Run live: an order for an unmapped variant failed
+at the worker, surfaced on the dashboard as "1 order needs you", and after the mapping was restored, **Retry
+fulfilment** sent it to the printer — PRINTING, attention badge gone.
+
+**What landed.**
+
+- **Operator auth in the API** (ADR-005): `operators` + `operator_sessions` tables, scrypt passwords, 32-byte
+  tokens stored only as SHA-256, 12 h expiry, 5-attempt lockout per email, one message for wrong email and
+  wrong password, `OperatorGuard` on every admin route. The seed creates `admin@nowcore.local`.
+- **Admin API**: dashboard (revenue, orders, AOV, COD share, print SLA, needs-attention), order list with
+  status filters and search (reference, email, phone, SKU), order detail with the full event timeline and the
+  actions the state machine allows, and the actions — retry fulfilment (fresh job id, since BullMQ would
+  silently ignore a reused one), cancel, refund (recorded only, said so in the event).
+- **Admin app**: sign-in, a sidebar with a red needs-attention count, dashboard with range tabs, the order
+  board (10 s live re-render, paused when the tab is hidden), order detail with timeline, references and
+  action forms. Plain accessible HTML on tokens; status colours added to `libs/ui`.
+
+**Decisions, with what was rejected.**
+
+- _Operator auth in the API, over Supabase Auth_ — ADR-005.
+- _No shadcn yet._ Tables, tabs and forms are native elements; shadcn earns its entry when a combobox or
+  date picker does.
+- _Polling over Realtime_ for the board — no hosted project; polling a server component needs no socket.
+- _Refund recorded, not issued._ The Razorpay refund API is unwired (no keys); the event carries
+  `recordedOnly: true` and the button tells the operator where the money actually moves.
+
+**Counts:** 11 projects, 98 tests (API 33, admin 2).
+
+**Watched failing before being trusted:**
+
+- **The operator guard** — removed `@UseGuards(OperatorGuard)`: unauthenticated access and every action
+  failed in the suite (4 tests). Restored.
+- **A bug the API tests could not see** — in the browser, Retry answered "Body cannot be empty when
+  content-type is set to 'application/json'": the admin's client sent a JSON content type on body-less
+  actions, which Fastify refuses. The API tests sent no content type, so they passed. Fixed in the client and
+  pinned by a new admin unit test, which fails with the old header behaviour.
+- **Suites eating each other's jobs** — the first combined uncached run failed twice: two worker suites each
+  started a full worker on the same queues, so one completed (and removed) the other's `system` job and sent
+  the other's confirmation email through the wrong mailer. The same mechanism was behind yesterday's "live
+  worker changed a test's world". Fixed at the root with a BullMQ key prefix (`QUEUE_PREFIX`, default
+  `nowcore`): every worker test run gets a unique one, API suites use `test-api` (which nothing consumes).
+  Two consecutive uncached full runs green afterwards.
+
+**Carried forward:**
+
+- Retry and refund need care in production: refund does not move money; retry only helps once the cause is
+  fixed (the hint says so).
+- Login lockout is per API instance and in memory (ADR-005).
+- API test runs leave their never-consumed jobs under the `test-api` prefix in local Redis — a few keys per
+  run; CI's Redis is ephemeral. `pnpm infra:reset` clears it.
+- The variant mapping had to be restored with SQL for the retry demo — the mapping UI is the next slice.
+
+**Verified:** full uncached check; in Chrome via the DevTools MCP — redirect to sign-in, wrong password
+message, sign-in, dashboard numbers, needs-attention list, order detail timeline, retry → PRINTING.
+
+**Not verified:** two operators at once; a real phone.
 
 ---
 

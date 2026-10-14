@@ -13,7 +13,9 @@ import { WorkerModule } from './worker.module.js';
  */
 describe('worker', () => {
   it('picks up a job from Redis and completes it', async () => {
-    const env = readEnv({});
+    const env = readEnv({
+      QUEUE_PREFIX: `test-${Math.random().toString(36).slice(2, 10)}`,
+    });
     const mod = await Test.createTestingModule({
       imports: [WorkerModule.with(env)],
     }).compile();
@@ -21,6 +23,7 @@ describe('worker', () => {
     const queue = app.get<Queue>(getQueueToken(QUEUES.system));
     const events = new QueueEvents(QUEUES.system, {
       connection: redisConnection(env.REDIS_URL),
+      prefix: env.QUEUE_PREFIX,
     });
     await events.waitUntilReady();
 

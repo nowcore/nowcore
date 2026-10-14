@@ -24,6 +24,9 @@ pnpm db:seed                  # DROP 014 live, DROP 013 archived, 56 variants �
 pnpm frames                   # renders the seed turntables into apps/web/public/frames (~50s, gitignored)
 pnpm check                    # everything green before you touch anything
 pnpm dev                      # web :3000 · admin :3001 · api :4100 · worker
+
+# admin: admin@nowcore.local / nowcore-local-admin (seeded; set ADMIN_EMAIL / ADMIN_PASSWORD before
+# seeding anywhere real — the seed never overwrites an existing operator's password)
 ```
 
 Ports are offset (5433, 6381) so this runs beside other projects' stacks — `classroom-metaverse`

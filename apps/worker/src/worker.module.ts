@@ -19,7 +19,10 @@ export class WorkerModule {
     return {
       module: WorkerModule,
       imports: [
-        BullModule.forRoot({ connection: redisConnection(env.REDIS_URL) }),
+        BullModule.forRoot({
+          connection: redisConnection(env.REDIS_URL),
+          prefix: env.QUEUE_PREFIX,
+        }),
         BullModule.registerQueue(
           { name: QUEUES.system },
           { name: QUEUES.render },

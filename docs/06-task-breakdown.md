@@ -200,19 +200,19 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 **8 ideal days**
 
-| ID    | Task                                                                         | Est  | D:    |
-| ----- | ---------------------------------------------------------------------------- | ---- | ----- |
-| T-063 | Admin shell: shadcn, Supabase Auth, operator role claim verified server-side | 0.8d | T-027 |
-| T-064 | Drop authoring: number, title, accent, edition, windows                      | 0.8d | T-063 |
-| T-065 | Chapter CMS — homepage copy and imagery without a deploy                     | 1d   | T-064 |
-| T-066 | Artwork upload → mockup + turntable, with progress                           | 0.8d | T-034 |
-| T-067 | Variant editor + **Printrove variant mapping UI**                            | 0.8d | T-059 |
-| T-068 | **Publish check** per [05 §5](./05-lld.md) — refuses an unmapped variant     | 0.6d | T-067 |
-| T-069 | Order board with Supabase Realtime, filters, status pills                    | 1.2d | T-056 |
-| T-070 | Order detail: timeline, retry fulfilment, cancel, refund                     | 0.6d | T-069 |
-| T-071 | Revenue dashboard: revenue, orders, AOV, COD share, print SLA                | 0.7d | T-069 |
-| T-072 | Customers view                                                               | 0.4d | T-069 |
-| T-073 | Close early / extend a drop                                                  | 0.3d | T-064 |
+| ID    | Task                                                                                                                                     | Est  | D:    |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---- | ----- |
+| T-063 | ✅ Admin shell + operator sign-in in the API (ADR-005 — not Supabase Auth; no shadcn yet), session verified server-side on every request | 0.8d | T-027 |
+| T-064 | Drop authoring: number, title, accent, edition, windows                                                                                  | 0.8d | T-063 |
+| T-065 | Chapter CMS — homepage copy and imagery without a deploy                                                                                 | 1d   | T-064 |
+| T-066 | Artwork upload → mockup + turntable, with progress                                                                                       | 0.8d | T-034 |
+| T-067 | Variant editor + **Printrove variant mapping UI**                                                                                        | 0.8d | T-059 |
+| T-068 | **Publish check** per [05 §5](./05-lld.md) — refuses an unmapped variant                                                                 | 0.6d | T-067 |
+| T-069 | ✅ Order board — 10 s server re-render instead of Supabase Realtime (no hosted project), filters, search, status pills                   | 1.2d | T-056 |
+| T-070 | ✅ Order detail: timeline, retry fulfilment, cancel, refund (**recorded only** — money moves in the Razorpay dashboard)                  | 0.6d | T-069 |
+| T-071 | ✅ Revenue dashboard: revenue, orders, AOV, COD share, print SLA                                                                         | 0.7d | T-069 |
+| T-072 | Customers view                                                                                                                           | 0.4d | T-069 |
+| T-073 | Close early / extend a drop                                                                                                              | 0.3d | T-064 |
 
 **done:** a full drop is authored, published, sold and fulfilled without touching code.
 

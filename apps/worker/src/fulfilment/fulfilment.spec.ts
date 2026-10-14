@@ -14,7 +14,9 @@ import { ConsoleMailer } from './mailer.js';
  * 2020) and orders, and deletes them afterwards.
  */
 describe('fulfilment', () => {
-  const env = readEnv({});
+  const env = readEnv({
+    QUEUE_PREFIX: `test-${Math.random().toString(36).slice(2, 10)}`,
+  });
   const mailer = new ConsoleMailer();
   const number = 900 + Math.floor(Math.random() * 99);
   const tag = `NC-${number}`;
@@ -42,9 +44,11 @@ describe('fulfilment', () => {
     notify = app.get(getQueueToken(QUEUE.notify));
     events = new QueueEvents(QUEUE.pod, {
       connection: redisConnection(env.REDIS_URL),
+      prefix: env.QUEUE_PREFIX,
     });
     notifyEvents = new QueueEvents(QUEUE.notify, {
       connection: redisConnection(env.REDIS_URL),
+      prefix: env.QUEUE_PREFIX,
     });
     await Promise.all([events.waitUntilReady(), notifyEvents.waitUntilReady()]);
 

@@ -55,6 +55,11 @@ const Env = z
     REDIS_URL: z
       .url({ protocol: /^rediss?$/ })
       .default('redis://127.0.0.1:6381'),
+    /** BullMQ key prefix — must match the worker's. Tests use their own (see the worker's env). */
+    QUEUE_PREFIX: z
+      .string()
+      .regex(/^[a-z0-9-]+$/)
+      .default('nowcore'),
 
     /**
      * Which printer fulfils orders. Only `sandbox` exists until the Printrove

@@ -30,7 +30,9 @@ describe('orders', () => {
   };
 
   beforeAll(async () => {
-    app = await createApp(readEnv({ RECONCILE: 'off' }));
+    app = await createApp(
+      readEnv({ RECONCILE: 'off', QUEUE_PREFIX: 'test-api' }),
+    );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     db = app.get(PrismaService);

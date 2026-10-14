@@ -8,7 +8,7 @@ import { readEnv } from '../../env.js';
 describe('catalogue', () => {
   let app: NestFastifyApplication;
   beforeAll(async () => {
-    app = await createApp(readEnv({}));
+    app = await createApp(readEnv({ QUEUE_PREFIX: 'test-api' }));
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   });

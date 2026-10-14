@@ -25,6 +25,16 @@ const Env = z.object({
     .default('local-dev-order-token-secret-change-me-0000'),
   /** Defaults to the Redis infra/docker-compose.yml publishes. */
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).default('redis://127.0.0.1:6381'),
+  /**
+   * BullMQ key prefix. Every real process uses the default; each test run
+   * gets its own, so test jobs can never be taken by another suite's worker
+   * or by a developer's running one (found 14 Oct 2026: two worker suites
+   * consumed each other's jobs).
+   */
+  QUEUE_PREFIX: z
+    .string()
+    .regex(/^[a-z0-9-]+$/)
+    .default('nowcore'),
   /** Where rendered frames are written until Supabase Storage (T-035). */
   FRAMES_DIR: z
     .string()

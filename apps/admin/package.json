@@ -41,6 +41,18 @@
           "^production"
         ],
         "cache": true
+      },
+      "test": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "vitest run",
+          "cwd": "{projectRoot}"
+        },
+        "cache": true,
+        "inputs": [
+          "default",
+          "^production"
+        ]
       }
     }
   },
@@ -50,7 +62,9 @@
     "geist": "^1",
     "next": "~16.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "server-only": "^0.0.1",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

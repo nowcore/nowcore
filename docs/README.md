@@ -65,5 +65,6 @@ Razorpay · Printrove.
 
 ## Current repo state
 
-Design artifacts and documentation only. No application code yet — Phase 1 opens once the design is
-signed off. See [08-progress.md](./08-progress.md).
+Foundation, the cinematic storefront, commerce (cart → checkout → payment → printer → delivery) and the
+admin's operations side are built and running locally. See [08-progress.md](./08-progress.md) for what is
+real, what is verified, and what waits on outside credentials.
