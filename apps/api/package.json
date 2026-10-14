@@ -38,6 +38,17 @@
         "dependsOn": [
           "^build"
         ]
+      },
+      "load": {
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "cache": false,
+        "options": {
+          "command": "node load-drop.mjs",
+          "cwd": "{projectRoot}"
+        }
       }
     }
   },

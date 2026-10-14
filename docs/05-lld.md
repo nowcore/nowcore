@@ -253,6 +253,8 @@ worst failure in the system — taking money for something that cannot be made.
 - No provider credential is readable by `apps/web` or `apps/admin`. Enforced structurally by the module
   boundary that bans `scope:web` from importing any pod or payment package.
 - Price and availability are re-validated server-side at order creation. The client's cart is a suggestion.
+- The edition cap holds under a rush (ADR-008): unpaid orders hold their pieces for 15 minutes and checkout
+  is serialised per drop by an advisory lock. `pnpm exec nx run api:load` proves it with 500 buyers.
 - Webhook signatures verified against the raw body; unsigned requests rejected before any parsing.
 - Tracking links are signed, single-order, and expire — a sequential order reference must never be
   enumerable into someone else's address.

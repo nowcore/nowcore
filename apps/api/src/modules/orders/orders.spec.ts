@@ -3,6 +3,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { CartView, OrderView, PlacedOrder } from '@nowcore/shared';
 import { createApp } from '../../create-app.js';
 import { readEnv } from '../../env.js';
+import { claimed, HOLD_MS } from '@nowcore/orders';
 import { PrismaService } from '../../prisma.service.js';
 import { FakeProvider } from '../payments/fake.provider.js';
 import { PAYMENT_PROVIDER } from '../payments/payment-provider.js';
@@ -341,35 +342,68 @@ describe('orders', () => {
     expect((await orderOf(placed.reference)).status).toBe('PAID');
   });
 
-  it('refuses an order that would exceed the edition', async () => {
-    // Shrink the edition to what earlier tests have claimed plus 2, then ask for 3.
-    const claimed = await db.orderItem.aggregate({
-      _sum: { quantity: true },
-      where: {
-        skuSnap: { startsWith: tag },
-        // Every claimed status, not just PAID: a running worker moves paid
-        // orders on to FULFILMENT_QUEUED and PRINTING while this suite runs.
-        order: {
-          status: {
-            in: [
-              'PAID',
-              'FULFILMENT_QUEUED',
-              'FULFILMENT_FAILED',
-              'PRINTING',
-              'SHIPPED',
-              'DELIVERED',
-            ],
-          },
-        },
-      },
-    });
+  /** Room left in the test drop's edition becomes exactly `room`, counting paid orders and live holds. */
+  async function leaveRoom(room: number): Promise<void> {
     await db.drop.update({
       where: { id: dropId },
-      data: { editionSize: (claimed._sum.quantity ?? 0) + 2 },
+      data: { editionSize: (await claimed(db, number, new Date())) + room },
     });
+  }
+  const pay = async (placed: PlacedOrder) => {
+    const providerOrderId = placed.payment?.providerOrderId as string;
+    return app.inject({
+      method: 'POST',
+      url: `/orders/${placed.reference}/verify`,
+      payload: { providerOrderId, ...fake.pay(providerOrderId) },
+    });
+  };
+
+  it('refuses an order that would exceed the edition', async () => {
+    await leaveRoom(2);
     const res = await place(await cartWith(['M', 3]));
     expect(res.statusCode).toBe(409);
     expect(res.json().message).toBe('Only 2 left in this edition.');
     expect((await place(await cartWith(['M', 2]))).statusCode).toBe(201);
+  });
+
+  it('serves a rush in turn: twelve buyers at once on four left buy exactly four', async () => {
+    await leaveRoom(4);
+    const carts = await Promise.all(
+      Array.from({ length: 12 }, () => cartWith(['L', 1])),
+    );
+    const codes = (await Promise.all(carts.map((c) => place(c)))).map(
+      (r) => r.statusCode,
+    );
+    expect(codes.filter((c) => c === 201)).toHaveLength(4);
+    expect(codes.filter((c) => c === 409)).toHaveLength(8);
+  });
+
+  it('an unpaid order holds its piece for fifteen minutes, then lets it go', async () => {
+    await leaveRoom(1);
+    const first = PlacedOrder.parse(
+      (await place(await cartWith(['M', 1]))).json(),
+    );
+    expect((await place(await cartWith(['M', 1]))).statusCode).toBe(409);
+    await db.order.update({
+      where: { reference: first.reference },
+      data: { createdAt: new Date(Date.now() - HOLD_MS - 60_000) },
+    });
+    const second = PlacedOrder.parse(
+      (await place(await cartWith(['M', 1]))).json(),
+    );
+    expect(second.status).toBe('PENDING');
+
+    // The first buyer pays late, after the second took the piece: honoured, and flagged.
+    expect((await pay(first)).json()).toEqual({ status: 'PAID' });
+    const paid = (await orderOf(first.reference)).events.find(
+      (e) => e.to === 'PAID',
+    );
+    expect(paid?.payload).toMatchObject({ overEdition: true });
+    // A payment inside its hold is not flagged.
+    await pay(second);
+    const ok = (await orderOf(second.reference)).events.find(
+      (e) => e.to === 'PAID',
+    );
+    expect(ok?.payload).not.toHaveProperty('overEdition');
   });
 });

@@ -22,16 +22,12 @@ import {
   type PaymentProvider,
 } from '../payments/payment-provider.js';
 import { OrderStateService } from './order-state.service.js';
-import { orderToken, validOrderToken } from '@nowcore/orders';
-
-const CLAIMED = [
-  'PAID',
-  'FULFILMENT_QUEUED',
-  'FULFILMENT_FAILED',
-  'PRINTING',
-  'SHIPPED',
-  'DELIVERED',
-] as const;
+import {
+  claimed,
+  lockEdition,
+  orderToken,
+  validOrderToken,
+} from '@nowcore/orders';
 
 /**
  * Placing and paying for orders (T-050–T-053).
@@ -79,32 +75,6 @@ export class OrdersService {
       return { item, v };
     });
 
-    // The edition limit, per drop.
-    for (const drop of new Map(
-      lines.map(({ v }) => [v.product.drop.id, v.product.drop]),
-    ).values()) {
-      if (drop.editionSize === null) continue;
-      const prefix = `NC-${String(drop.number).padStart(3, '0')}-`;
-      const claimed =
-        (
-          await this.db.orderItem.aggregate({
-            _sum: { quantity: true },
-            where: {
-              skuSnap: { startsWith: prefix },
-              order: { status: { in: [...CLAIMED] } },
-            },
-          })
-        )._sum.quantity ?? 0;
-      const wanted = lines
-        .filter(({ v }) => v.product.drop.id === drop.id)
-        .reduce((n, l) => n + l.item.quantity, 0);
-      if (claimed + wanted > drop.editionSize) {
-        throw new ConflictException(
-          `Only ${Math.max(0, drop.editionSize - claimed)} left in this edition.`,
-        );
-      }
-    }
-
     if (input.pay === 'COD') await this.assertCodAllowed(input.phone);
 
     const subtotal = lines.reduce(
@@ -112,41 +82,67 @@ export class OrdersService {
       0,
     );
     const totals = priceOrder(subtotal, input.pay);
-    const [{ n }] = await this.db.$queryRaw<
-      [{ n: bigint }]
-    >`SELECT nextval('order_reference_seq') AS n`;
-    const reference = `NC-${n}`;
 
-    const order = await this.db.order.create({
-      data: {
-        reference,
-        email: input.email,
-        phone: input.phone,
-        status: 'PENDING',
-        method: input.pay === 'COD' ? 'COD' : null,
-        ...totals,
-        shippingAddress: input.address,
-        cartId: cart.id,
-        items: {
-          create: lines.map(({ item, v }) => ({
-            variantId: v.id,
-            titleSnap: v.product.title,
-            skuSnap: v.sku,
-            sizeSnap: v.size,
-            colorSnap: v.colorName,
-            pricePaise: v.pricePaise,
-            quantity: item.quantity,
-          })),
-        },
-        events: {
-          create: {
-            to: 'PENDING',
-            source: 'system',
-            payload: { pay: input.pay },
+    // The edition check and the order it admits are one step, serialised per
+    // drop (ADR-008): without the lock, a rush all read the same count.
+    const drops = [
+      ...new Map(
+        lines.map(({ v }) => [v.product.drop.id, v.product.drop]),
+      ).values(),
+    ].sort((a, b) => a.id.localeCompare(b.id));
+    const { order, reference } = await this.db.$transaction(
+      async (tx) => {
+        for (const drop of drops) {
+          if (drop.editionSize === null) continue;
+          await lockEdition(tx, drop.id);
+          const taken = await claimed(tx, drop.number, new Date());
+          const wanted = lines
+            .filter(({ v }) => v.product.drop.id === drop.id)
+            .reduce((n, l) => n + l.item.quantity, 0);
+          if (taken + wanted > drop.editionSize)
+            throw new ConflictException(
+              `Only ${Math.max(0, drop.editionSize - taken)} left in this edition.`,
+            );
+        }
+        const [{ n }] = await tx.$queryRaw<
+          [{ n: bigint }]
+        >`SELECT nextval('order_reference_seq') AS n`;
+        const reference = `NC-${n}`;
+        const order = await tx.order.create({
+          data: {
+            reference,
+            email: input.email,
+            phone: input.phone,
+            status: 'PENDING',
+            method: input.pay === 'COD' ? 'COD' : null,
+            ...totals,
+            shippingAddress: input.address,
+            cartId: cart.id,
+            items: {
+              create: lines.map(({ item, v }) => ({
+                variantId: v.id,
+                titleSnap: v.product.title,
+                skuSnap: v.sku,
+                sizeSnap: v.size,
+                colorSnap: v.colorName,
+                pricePaise: v.pricePaise,
+                quantity: item.quantity,
+              })),
+            },
+            events: {
+              create: {
+                to: 'PENDING',
+                source: 'system',
+                payload: { pay: input.pay },
+              },
+            },
           },
-        },
+        });
+        return { order, reference };
       },
-    });
+      // A rush queues on the lock; give the queue time rather than failing it.
+      { maxWait: 10_000, timeout: 30_000 },
+    );
     const token = orderToken(this.env.ORDER_TOKEN_SECRET, reference);
 
     if (input.pay === 'COD') {

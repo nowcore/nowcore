@@ -18,7 +18,7 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 4 — Admin             | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
 | **Phase 5 — Trend radar**   | ▓▓▓▓▓▓▓▓░░ 9 / 11 tasks · 2 🟡               |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
-| Phase 7 — Hardening         | ▓░░░░░░░░░ 1 / 11 tasks                      |
+| Phase 7 — Hardening         | ▓▓░░░░░░░░ 2 / 11 tasks                      |
 
 **Next up:** Phase 6 — accounts (Supabase Auth, phone OTP or email; order history). It needs the hosted
 Supabase project (T-017). Until that exists, Phase 7 hardening items that are local — per-route body limits
@@ -45,6 +45,52 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-15 — Load test: a drop opening with 500 buyers · T-096
+
+**The first run oversold by 400.** 500 buyers released at once on an edition of 100 — every one of them got
+an order, paid, and was confirmed. Every response was a 2xx; nothing in the system noticed. Two faults: the
+edition check counted only paid orders (and every buyer was checked before anyone paid), and the check and
+the insert were separate statements. Fixed by ADR-008: unpaid orders hold their pieces for 15 minutes, and
+checkout counts and inserts under a per-drop advisory lock.
+
+**After the fix:**
+
+| Buyers | Edition | Paid | Order p50 / p95  | Responses                                   |
+| ------ | ------- | ---- | ---------------- | ------------------------------------------- |
+| 500    | 100     | 100  | 651 / 752 ms     | 100 × 201, 400 × 409 "Only 0 left", 0 × 5xx |
+| 1 000  | 250     | 250  | 1 812 / 2 089 ms | 250 × 201, 750 × 409, 0 × 5xx               |
+
+Local machine, one API process, Postgres in Colima, fake payments, every buyer on its own IP.
+
+**What landed.**
+
+- `pnpm exec nx run api:load` (`BUYERS`, `EDITION`): boots the built API on :4180, makes a throwaway drop,
+  releases every buyer at once through cart → line → order → pay → verify, prints latency per step, fails on
+  any 5xx or an oversell, and removes everything after.
+- `libs/orders` `edition.ts`: `HOLD_MS`, `CLAIMED`, `claimed()`, `lockEdition()`.
+- A payment after its hold lapsed, when the edition has since filled, is honoured and flagged
+  (`overEdition: true` on the PAID event, a warning in the log).
+
+**Counts:** 10 projects, 144 tests (API 60).
+
+**Watched failing before being trusted:** the load test itself (oversold by 400 before the fix); the lock
+removed (the 12-buyer rush test sold more than 4); holds not counted (rush and hold tests failed); the
+late-payment flag removed (its test failed).
+
+**Carried forward:**
+
+- **Every step is pool-bound at this scale** — even creating a cart took ~1 s p50 at 1 000 simultaneous
+  buyers, because one process shares a small Postgres pool. Production needs the pool sized for it
+  (Supabase's pooler, T-017) and more than one API instance; re-run the load test against staging.
+- The storefront's edition counter shows paid pieces only, not holds.
+- `CLAIMED` is still copied in catalogue, admin-drops and admin-orders; libs/orders now exports it.
+- Not measured: through the Next server (the BFF adds a hop), real Razorpay latency, rate limiting under
+  distinct-IP load from outside one machine.
+
+**Verified:** load test at 500 and 1 000 buyers; two uncached full runs.
 
 ---
 
