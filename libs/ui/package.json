@@ -23,6 +23,7 @@
     ]
   },
   "dependencies": {
+    "@nowcore/shared": "workspace:^",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {

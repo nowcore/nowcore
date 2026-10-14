@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation';
 const ITEMS = [
   { href: '/', label: 'Dashboard' },
   { href: '/orders', label: 'Orders' },
+  { href: '/drops', label: 'Drops' },
+  { href: '/customers', label: 'Customers' },
 ] as const;
 
 export function Nav({ attention }: { attention: number }) {

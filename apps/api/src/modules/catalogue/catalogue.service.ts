@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@nowcore/db';
 import {
   Chapters,
@@ -9,7 +9,9 @@ import {
   type ProductPage,
   type ProductView,
 } from '@nowcore/shared';
+import { ENV, type Env } from '../../env.js';
 import { PrismaService } from '../../prisma.service.js';
+import { assetUrl } from '../assets/asset-url.js';
 
 /** Order statuses that count as a claimed garment: money was taken. */
 const CLAIMED = [
@@ -32,7 +34,10 @@ type DropRow = Prisma.DropGetPayload<object>;
  */
 @Injectable()
 export class CatalogueService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    @Inject(ENV) private readonly env: Env,
+  ) {}
 
   async liveDrop(): Promise<DropView> {
     // The live drop; if none is live, the most recent one, so the film always
@@ -126,7 +131,7 @@ export class CatalogueService {
       closesAt: drop.closesAt?.toISOString() ?? null,
       editionSize: drop.editionSize,
       claimed: claimed._sum.quantity ?? 0,
-      still: first?.mockupUrl ?? null,
+      still: assetUrl(this.env.ASSET_BASE_URL, first?.mockupUrl ?? null),
     };
   }
 
@@ -146,7 +151,9 @@ export class CatalogueService {
         code: parseSku(first.sku).color.toLowerCase(),
         name,
         hex: first.colorHex,
-        frames: first.sequenceUrl ? framesAt(first.sequenceUrl) : null,
+        frames: first.sequenceUrl
+          ? framesAt(assetUrl(this.env.ASSET_BASE_URL, first.sequenceUrl))
+          : null,
         sizes: vs
           .sort(
             (a, b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size),

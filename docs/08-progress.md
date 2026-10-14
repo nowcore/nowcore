@@ -15,14 +15,14 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
 | Phase 2 — The film          | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
 | Phase 3 — Commerce          | ▓▓▓▓▓▓▓▓▓░ 15 / 18 tasks · 2 🟡 · 1 blocked  |
-| **Phase 4 — Admin**         | ▓▓▓▓░░░░░░ 4 / 11 tasks                      |
+| **Phase 4 — Admin**         | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
 | Phase 5 — Trend radar       | ░░░░░░░░░░ 0 / 11 tasks                      |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
 | Phase 7 — Hardening         | ░░░░░░░░░░ 0 / 10 tasks                      |
 
-**Next up:** the admin's drops side — drop authoring (T-064), chapter CMS (T-065), artwork upload → turntable
-(T-066), the variant → printer mapping UI (T-067), the publish check (T-068), close early / extend (T-073),
-customers (T-072).
+**Next up:** Phase 5 — the trend radar and the drop engine: ingest (Reddit, HN, Google Trends, YouTube), scoring
+with the two-source rule, the radar board, promote-to-draft, and the scheduler that opens scheduled drops
+and archives closed ones (T-082) — which also notifies the waitlist (T-083).
 
 **Gate to watch:** Phase 2 requires ≥55fps p95 scroll and LCP < 2.5s on a mid-tier Android at Fast 4G.
 Cinematic-everywhere was chosen with that cost understood; if the gate fails, it gets revisited with
@@ -43,6 +43,76 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-14 — Admin, drops side: authoring, artwork → turntables, printer mapping, the publish check · T-064–T-068, T-072, T-073
+
+An operator can now launch a drop without touching code. Run end to end in Chrome: created DROP 015 "Inbox
+Zero Is Fake" (orange accent), uploaded a 1200 px print file, watched both colourways render (~10 s each),
+mapped 14 variants to the printer, passed the publish check, was refused "Open now" because DROP 014 was
+live, closed 014, opened 015 — and the storefront re-tinted orange with the new turntable, 72-hour clock,
+and 014 in the archive. (Demo drop removed and the seed restored afterwards.)
+
+**What landed.**
+
+- **Drop authoring**: create (number, slug from title, accent with a live contrast check, edition, colourways
+  from the blanks, price; 2XL/3XL +₹50), edit, the seven-chapter film copy (drafted from the title so a new
+  drop is never blank), close early, extend by 1–72 h. Drops cannot reopen; only one is live at a time.
+- **Artwork → turntables**: upload checked by PNG magic bytes, ≤ 8 MB, ≥ 600 px; stored in `.storage/artwork`;
+  one render job per colourway (key, not bytes, through Redis); the worker renders and points the variants at
+  the frames; each upload gets a new revision path. The drop page shows progress and refreshes until done.
+- **Variant → printer mapping** table, with the printer asked about every mapped id (`unknownVariants` on the
+  port).
+- **The publish check**, in words: unmapped variants, ids the printer does not stock, missing turntables,
+  accent contrast, incomplete film copy, a window that closes before it opens.
+- **Customers**: buyers by email, with orders, delivered, RTO, spend, cities.
+- **Frames from an asset origin** (ADR-006), and a storefront revalidate webhook so a drop opening shows at once.
+- Contrast maths moved to `@nowcore/shared/color` (zod-free) — the API check and the admin preview share it.
+
+**Decisions, with what was rejected.**
+
+- _Ask the printer about mapped ids, over placing a sandbox order per colourway_ (LLD §5's original wording).
+  A lookup answers the real question — "will this id print?" — without inventing orders.
+- _Refuse to open while another drop is live, over auto-closing it._ Closing a drop is irreversible and fires
+  the archive; it should be a deliberate act.
+- _Artwork only before opening._ Re-rendering a live drop would blank its turntables while buyers watch.
+- _A 12 MB global body limit for artwork_, over multipart. Smaller change; the risk is carried forward.
+
+**Counts:** 10 projects, 111 tests (API 43). Initial routes unchanged (72–73%). Motion: full 60 fps · LCP
+0.50 s · CLS 0, frames 843 KB; reduced 60 fps · 0.41 s · 199 KB; static 0.40 s.
+
+**Watched failing before being trusted:**
+
+- **The publish check** — gutted to always return no problems: the two tests asserting its findings failed.
+- **Frames written after a build 404'd** — found in the browser (the admin's new stills were broken), confirmed
+  with curl (new frame 404, seed frame 200), fixed by ADR-006, and pinned by a test that writes a frame after
+  the API starts and fetches it.
+- **The dashboard had no upper bound** on its window — a test pinned to a fixed past day counted 10 orders
+  instead of 2. Harmless in production (now is always now), wrong in principle; bounded at `now`.
+- **A parallel-suite race** — the dashboard test measured global "today" totals while another suite created
+  orders. Moved to a day no suite touches.
+- **The single-live rule** named another suite's live test drop instead of 014 — the rule was right; the test now
+  accepts whichever drop is live.
+- **motion-check went blind** — frames moved cross-origin and every one read as 0 bytes. `Timing-Allow-Origin`.
+- **Stale storefront after opening a drop** — the 30 s stale-while-revalidate cache showed the old drop. Fixed
+  with the revalidate webhook; proven by extending a drop and seeing the new closing time on the next request.
+- **Accessibility** — the accent hex field had no accessible name (seen in the a11y snapshot). Labelled.
+
+**Carried forward:**
+
+- **The scheduler (T-082) does not exist yet**: "Schedule" marks a drop SCHEDULED, but nothing opens it at its
+  time. The admin says so on the button.
+- **12 MB global request body limit** — every public route accepts it. Per-route limits with rate limiting (T-096).
+- **Serving frames from the API** is a local stand-in; production frames belong on the storage CDN (T-035).
+- **Refund is recorded, not issued** (unchanged).
+- The publish check calls the printer for every mapped id on every drop page view of a draft — fine for the
+  sandbox; cache it when a real printer's API has rate limits.
+
+**Verified:** two consecutive uncached full runs; the operator loop in Chrome; the revalidate webhook (401 on a
+wrong secret, instant storefront update on extend); motion-check with cross-origin frames.
+
+**Not verified:** a print file at the 8 MB limit; two operators editing one drop; a real phone.
 
 ---
 

@@ -46,7 +46,7 @@ describe('catalogue', () => {
     ]);
     expect(tee?.colourways[0]?.frames?.full).toHaveLength(72);
     expect(tee?.colourways[0]?.frames?.still).toBe(
-      '/frames/mediocre-by-design/blk/still.avif',
+      'http://localhost:4100/frames/mediocre-by-design/blk/still.avif',
     );
     expect(tee?.fromPaise).toBe(79900);
   });
@@ -65,7 +65,7 @@ describe('catalogue', () => {
     expect(archive.map((d) => d.number)).toEqual([13]);
     // The hero colourway's still — the only one rendered for drop 013.
     expect(archive[0]?.still).toBe(
-      '/frames/touch-grass-protocol/blk/still.avif',
+      'http://localhost:4100/frames/touch-grass-protocol/blk/still.avif',
     );
     const page = ProductPage.parse(
       (await get('/products/mediocre-by-design-tee')).json(),

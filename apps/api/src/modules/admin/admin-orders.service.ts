@@ -197,7 +197,10 @@ export class AdminOrdersService {
     since.setDate(since.getDate() - days);
 
     const claimed = await this.db.order.findMany({
-      where: { status: { in: [...CLAIMED] }, createdAt: { gte: since } },
+      where: {
+        status: { in: [...CLAIMED] },
+        createdAt: { gte: since, lte: now },
+      },
       select: {
         id: true,
         totalPaise: true,

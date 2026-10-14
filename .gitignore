@@ -19,5 +19,9 @@ playwright-report/
 out-tsc/
 test-output/
 
-# Rendered turntables — regenerate with `pnpm exec nx run worker:render-seed`
-apps/web/public/frames/
+# Rendered turntables now live in .storage/frames (ignored above with .storage/)
+
+
+# Uploaded artwork, local stand-in for Supabase Storage (T-035)
+.storage/
+

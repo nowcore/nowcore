@@ -25,7 +25,7 @@ export class WorkerModule {
         }),
         BullModule.registerQueue(
           { name: QUEUES.system },
-          { name: QUEUES.render },
+          { name: QUEUE.render },
           { name: QUEUE.pod },
           { name: QUEUE.notify },
         ),

@@ -61,6 +61,16 @@ describe('sandbox printer', () => {
     expect(evt.trackingUrl).toContain(podOrderId);
   });
 
+  it('tells the publish check which mapped ids it does not stock', async () => {
+    expect(
+      await new SandboxPrinter('s').unknownVariants([
+        'sbx_a',
+        'printrove_1',
+        'sbx_b',
+      ]),
+    ).toEqual(['printrove_1']);
+  });
+
   it('names every unmapped variant, so the publish check can refuse the drop', () => {
     expect(
       unmapped([

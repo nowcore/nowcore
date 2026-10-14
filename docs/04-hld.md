@@ -54,8 +54,10 @@ Price and availability are re-checked on the server at order creation. The clien
 **Fulfil** — worker `pod.submit` → `libs/pod` → Printrove → store `pod_order_id`. Printrove webhooks →
 API → order transitions + buyer notification.
 
-**Author** — `apps/admin` → API → Supabase Storage for artwork → enqueue `render.turntable` → frames
-land in Storage → drop becomes publishable.
+**Author** — `apps/admin` → API → artwork to storage (`.storage/artwork` locally) → a `render.turntable` job
+per colourway → the worker writes frames to storage and points the variants at them → the publish check passes
+→ the operator opens the drop → the API calls the storefront's revalidate webhook. Frames are served from an
+asset origin, never from the web build (ADR-006).
 
 ## 4. Directory structure
 

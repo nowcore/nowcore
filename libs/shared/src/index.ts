@@ -7,3 +7,5 @@ export * from './cart.js';
 export * from './checkout.js';
 export * from './jobs.js';
 export * from './admin.js';
+export * from './color.js';
+export * from './blanks.js';

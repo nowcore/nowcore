@@ -1,5 +1,6 @@
 /**
- * Renders the turntables for the seeded drops into apps/web/public/frames.
+ * Renders the turntables for the seeded drops into .storage/frames, which the
+ * API serves at /frames (frames are never part of a web build — see frames.controller).
  *
  *   pnpm exec nx run worker:render-seed
  *
@@ -11,7 +12,7 @@ import { typographicArtwork } from './artwork.js';
 import { LocalFrameStore } from './frame-store.js';
 import { renderColourway } from './render-colourway.js';
 
-const ROOT = join(import.meta.dirname, '../../../web/public/frames');
+const ROOT = join(import.meta.dirname, '../../../../.storage/frames');
 const store = new LocalFrameStore(ROOT);
 
 const DROPS = [

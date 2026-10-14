@@ -21,7 +21,7 @@ pnpm install
 pnpm infra:up                 # Postgres on :5433, Redis on :6381 — waits until healthy
 pnpm db:migrate               # applies libs/db/prisma/migrations
 pnpm db:seed                  # DROP 014 live, DROP 013 archived, 56 variants — idempotent
-pnpm frames                   # renders the seed turntables into apps/web/public/frames (~50s, gitignored)
+pnpm frames                   # renders the seed turntables into .storage/frames (~50s, gitignored); the API serves them
 pnpm check                    # everything green before you touch anything
 pnpm dev                      # web :3000 · admin :3001 · api :4100 · worker
 
@@ -106,7 +106,10 @@ Entries get added the first time something costs more than ten minutes.
 - **"The workspace is out of sync"** — a project gained a workspace dependency. `pnpm exec nx sync`.
 - **Prisma 7's `$connect()` opens nothing** with a driver adapter. The API proves the database at
   boot with `SELECT 1`; do the same in any new process that owns a client.
-- **The hero shows a still and never turns** — the frames are not rendered. `pnpm frames`.
+- **The hero shows a still and never turns** — the frames are not rendered (`pnpm frames`), or the API is not
+  running: frames come from the API's `/frames`, not from the web app (ADR-006).
+- **A drop I just opened is not on the storefront** — the web app's `/api/revalidate` was not reachable from the
+  API (`WEB_REVALIDATE_URL`); its 30 s cache catches up on its own.
 - **`motion-check` says the browser is missing** — `pnpm exec playwright install chromium`.
 - **Checkout says "Test payments — no money moves"** — the API runs `PAYMENTS=fake` (the local default).
   Set the three `RAZORPAY_*` variables and `PAYMENTS=razorpay` to take real test payments.

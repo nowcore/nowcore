@@ -2,12 +2,12 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import {
   AdminOrderDetail,
   AdminOrderList,
-  Dashboard,
   Session,
 } from '@nowcore/shared';
 import { createApp } from '../../create-app.js';
 import { readEnv } from '../../env.js';
 import { PrismaService } from '../../prisma.service.js';
+import { AdminOrdersService } from './admin-orders.service.js';
 
 /**
  * Against the seeded database — signs in as the operator `pnpm db:seed`
@@ -194,16 +194,20 @@ describe('admin', () => {
   });
 
   it('reports the dashboard over claimed orders only', async () => {
-    const before = Dashboard.parse(
-      (await as('GET', '/admin/dashboard?range=today')).json(),
-    );
-    await order('PAID', { method: 'COD' });
-    await order('PENDING');
-    const after = Dashboard.parse(
-      (await as('GET', '/admin/dashboard?range=today')).json(),
-    );
-    expect(after.orders - before.orders).toBe(1);
-    expect(after.revenuePaise - before.revenuePaise).toBe(87900);
-    expect(after.codShare).toBeGreaterThan(0);
+    // On a day no other suite touches: dashboard totals are global, and suites
+    // run in parallel against one database.
+    const day = new Date('2020-02-02T06:30:00Z');
+    const at = { createdAt: day };
+    await order('PAID', { method: 'COD', ...at });
+    await order('PRINTING', at);
+    await order('PENDING', at);
+    const d = await app
+      .get(AdminOrdersService)
+      .dashboard('today', new Date('2020-02-02T12:00:00Z'));
+    expect(d.orders).toBe(2);
+    expect(d.revenuePaise).toBe(2 * 87900);
+    expect(d.aovPaise).toBe(87900);
+    expect(d.codShare).toBe(0.5);
+    expect(d.printSla).toBeNull(); // nothing paid more than 24 h before "now" with events to judge
   });
 });

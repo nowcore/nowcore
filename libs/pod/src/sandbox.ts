@@ -41,6 +41,10 @@ export class SandboxPrinter implements PodProvider {
     return { podOrderId: `sbx_order_${input.reference}` };
   }
 
+  async unknownVariants(podVariantIds: string[]): Promise<string[]> {
+    return podVariantIds.filter((id) => !this.catalogue(id));
+  }
+
   /** The signed webhook the press would send when an order reaches `status`. */
   webhook(
     podOrderId: string,

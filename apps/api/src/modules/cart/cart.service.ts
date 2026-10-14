@@ -1,11 +1,14 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import type { CartView, SetItem } from '@nowcore/shared';
+import { ENV, type Env } from '../../env.js';
 import { PrismaService } from '../../prisma.service.js';
+import { assetUrl } from '../assets/asset-url.js';
 
 /**
  * Carts (T-048). Possession of the id is access — it is an unguessable UUID
@@ -15,7 +18,10 @@ import { PrismaService } from '../../prisma.service.js';
  */
 @Injectable()
 export class CartService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    @Inject(ENV) private readonly env: Env,
+  ) {}
 
   async create(): Promise<CartView> {
     const cart = await this.db.cart.create({ data: {} });
@@ -46,7 +52,7 @@ export class CartService {
           pricePaise: v.pricePaise,
           quantity: item.quantity,
           available: !v.soldOut && v.product.drop.status === 'LIVE',
-          still: v.mockupUrl,
+          still: assetUrl(this.env.ASSET_BASE_URL, v.mockupUrl),
         };
       })
       .filter((l) => l !== null)

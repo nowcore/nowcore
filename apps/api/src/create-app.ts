@@ -16,7 +16,10 @@ export async function createApp(
 ): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.with(env),
-    new FastifyAdapter(),
+    // 12 MB, for artwork uploads (base64 in JSON). Global, so every public
+    // route accepts the same — per-route limits come with rate limiting
+    // (T-096; docs/08 carried forward).
+    new FastifyAdapter({ bodyLimit: 12 * 1024 * 1024 }),
     {
       // Webhook signatures (Razorpay, Printrove) are HMACs over the exact
       // bytes received. A body parsed to JSON and re-serialised will not

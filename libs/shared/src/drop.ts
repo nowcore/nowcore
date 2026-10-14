@@ -44,3 +44,19 @@ export const Chapters = z
     (cs) => cs.every((c, i) => c.key === ChapterKey.options[i]),
     'chapters must appear once each, in film order',
   );
+
+/**
+ * Drop lifecycle. A drop is drafted, optionally scheduled, opened, and closed
+ * into the archive — never reopened: a closed drop is the scarcity the whole
+ * label rests on (docs/01 P2).
+ */
+const DROP_TRANSITIONS: Readonly<Record<DropStatus, readonly DropStatus[]>> = {
+  DRAFT: ['SCHEDULED', 'LIVE'],
+  SCHEDULED: ['DRAFT', 'LIVE'],
+  LIVE: ['ARCHIVED'],
+  ARCHIVED: [],
+};
+
+export function canDropTransition(from: DropStatus, to: DropStatus): boolean {
+  return DROP_TRANSITIONS[from].includes(to);
+}

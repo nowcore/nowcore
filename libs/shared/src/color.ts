@@ -1,6 +1,11 @@
 /**
  * Colour arithmetic for the per-drop accent (T-024) and the publish check
  * (docs/05-lld.md §5). WCAG 2.x relative luminance and contrast ratio.
+ *
+ * Lives in shared, with no dependencies, because three places need the same
+ * answer: the API's publish check, the admin's live accent preview (a client
+ * component — hence the zod-free `@nowcore/shared/color` subpath), and
+ * libs/ui's theming, which re-exports it.
  */
 export const VOID = '#08090B';
 export const INK_ON_ACCENT = '#08090B';

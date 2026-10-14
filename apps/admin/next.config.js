@@ -23,6 +23,9 @@ const nextConfig = {
    * which it is.
    */
   distDir: process.env.NEXT_DIST_DIR ?? '.next',
+  // Artwork uploads go through a server action; the default 1 MB cap would
+  // refuse any print-quality PNG. The API checks the 8 MB limit itself.
+  experimental: { serverActions: { bodySizeLimit: '10mb' } },
 };
 
 module.exports = nextConfig;

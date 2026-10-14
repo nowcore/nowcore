@@ -151,7 +151,12 @@ GET   /orders/:reference?token=        tracking without an account (signed link)
 POST  /waitlist                        subscribe
 ```
 
-Admin, behind Supabase Auth + an operator role claim:
+Admin — **built** (T-063–T-073), behind an operator session (ADR-005: sign-in in the API, not Supabase Auth).
+The block below was the plan; the routes that exist are `POST/DELETE /admin/session`, `GET /admin/me`,
+`GET /admin/dashboard`, `GET /admin/orders[/:reference]`, `POST /admin/orders/:reference/{retry,cancel,refund}`,
+`GET|POST /admin/drops`, `GET|PATCH /admin/drops/:slug`, `PUT /admin/drops/:slug/chapters`,
+`POST /admin/drops/:slug/{artwork,publish,close,extend}`, `PATCH /admin/variants/:sku`, `GET /admin/customers`.
+Assets: `GET /frames/*` (ADR-006). Planned shape, for reference:
 
 ```
 POST  /admin/drops                     create draft

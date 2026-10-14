@@ -160,3 +160,15 @@ describe('checkout', () => {
     ).toBe(false);
   });
 });
+
+import { canDropTransition } from './index.js';
+
+describe('drop lifecycle', () => {
+  it('opens drafts and scheduled drops, archives live ones, never reopens', () => {
+    expect(canDropTransition('DRAFT', 'LIVE')).toBe(true);
+    expect(canDropTransition('SCHEDULED', 'LIVE')).toBe(true);
+    expect(canDropTransition('LIVE', 'ARCHIVED')).toBe(true);
+    expect(canDropTransition('ARCHIVED', 'LIVE')).toBe(false);
+    expect(canDropTransition('LIVE', 'DRAFT')).toBe(false);
+  });
+});

@@ -23,6 +23,13 @@ export default [
     },
   },
   {
+    // Contrast reference values (the void, ink on accent, the house signal):
+    // inputs to the WCAG maths, not styling. Must equal libs/ui tokens.css,
+    // which libs/ui's own test asserts.
+    files: ['src/color.ts', 'src/blanks.ts'],
+    rules: { 'nowcore/no-raw-design-values': 'off' },
+  },
+  {
     ignores: ['**/out-tsc', '**/test-output'],
   },
 ];

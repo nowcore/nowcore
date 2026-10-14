@@ -17,6 +17,11 @@
       "types": "./dist/format.d.ts",
       "import": "./dist/format.js",
       "default": "./dist/format.js"
+    },
+    "./color": {
+      "types": "./dist/color.d.ts",
+      "import": "./dist/color.js",
+      "default": "./dist/color.js"
     }
   },
   "nx": {

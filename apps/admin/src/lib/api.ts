@@ -37,16 +37,37 @@ export async function get<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   return schema.parse(await res.json());
 }
 
-/** A write. Returns the API's message on refusal, for the page to show. */
-export async function post(
+export type WriteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      message: string;
+      problems?: string[];
+      fields?: Record<string, string>;
+    };
+
+/** A write. Returns the API's message — and its problem list, if any — on refusal, for the page to show. */
+export async function send(
+  method: 'POST' | 'PATCH' | 'PUT',
   path: string,
-  body?: object,
-): Promise<{ ok: true } | { ok: false; message: string }> {
+  body?: unknown,
+): Promise<WriteResult> {
   const res = await call(path, {
-    method: 'POST',
-    ...(body ? { body: JSON.stringify(body) } : {}),
+    method,
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   if (res.ok) return { ok: true };
-  const json = (await res.json().catch(() => ({}))) as { message?: string };
-  return { ok: false, message: json.message ?? `Refused (${res.status}).` };
+  const json = (await res.json().catch(() => ({}))) as {
+    message?: string;
+    problems?: string[];
+    fields?: Record<string, string>;
+  };
+  return {
+    ok: false,
+    message: json.message ?? `Refused (${res.status}).`,
+    ...(json.problems ? { problems: json.problems } : {}),
+    ...(json.fields ? { fields: json.fields } : {}),
+  };
 }
+
+export const post = (path: string, body?: object) => send('POST', path, body);

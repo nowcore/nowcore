@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { accentVars } from './color.js';
+import { accentVars } from '@nowcore/shared/color';
 
 /**
  * Re-tints everything inside it for one drop (CLAUDE.md, rule 1).

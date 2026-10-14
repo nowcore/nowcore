@@ -35,10 +35,14 @@ const Env = z.object({
     .string()
     .regex(/^[a-z0-9-]+$/)
     .default('nowcore'),
+  /** Uploaded artwork, shared with the API; local stand-in for Supabase Storage (T-035). */
+  STORAGE_DIR: z
+    .string()
+    .default(new URL('../../../.storage', import.meta.url).pathname),
   /** Where rendered frames are written until Supabase Storage (T-035). */
   FRAMES_DIR: z
     .string()
-    .default(new URL('../../web/public/frames', import.meta.url).pathname),
+    .default(new URL('../../../.storage/frames', import.meta.url).pathname),
 });
 export type Env = z.infer<typeof Env>;
 

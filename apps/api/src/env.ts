@@ -55,6 +55,26 @@ const Env = z
     REDIS_URL: z
       .url({ protocol: /^rediss?$/ })
       .default('redis://127.0.0.1:6381'),
+    /**
+     * Rendered turntables, served by this API at /frames until Supabase
+     * Storage (T-035). Never inside the web app's public/: Next serves only
+     * what existed at build time, so a drop rendered after a deploy 404'd.
+     */
+    FRAMES_DIR: z
+      .string()
+      .default(new URL('../../../.storage/frames', import.meta.url).pathname),
+    /** The storefront's cache-busting webhook; called when a drop opens, closes or changes. */
+    WEB_REVALIDATE_URL: z.url().default('http://localhost:3000/api/revalidate'),
+    REVALIDATE_SECRET: z
+      .string()
+      .min(16)
+      .default('local-dev-revalidate-secret'),
+    /** Where frame URLs point. This API locally; the storage CDN in production. */
+    ASSET_BASE_URL: z.url().default('http://localhost:4100'),
+    /** Uploaded artwork, shared with the worker; local stand-in for Supabase Storage (T-035). */
+    STORAGE_DIR: z
+      .string()
+      .default(new URL('../../../.storage', import.meta.url).pathname),
     /** BullMQ key prefix — must match the worker's. Tests use their own (see the worker's env). */
     QUEUE_PREFIX: z
       .string()

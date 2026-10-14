@@ -51,6 +51,13 @@ export interface PodProvider {
    * get the same order back, not print the garment twice.
    */
   createOrder(input: PodOrderInput): Promise<{ podOrderId: string }>;
+  /**
+   * Which of these printer variant ids the printer does not recognise. The
+   * publish check asks before a drop opens — an id that is mapped but wrong
+   * fails at the printer after the buyer has paid, which is the failure the
+   * check exists to prevent (docs/05 §5).
+   */
+  unknownVariants(podVariantIds: string[]): Promise<string[]>;
   verifyWebhook(
     rawBody: Buffer,
     headers: Record<string, string | string[] | undefined>,

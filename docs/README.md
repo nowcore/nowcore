@@ -66,5 +66,5 @@ Razorpay · Printrove.
 ## Current repo state
 
 Foundation, the cinematic storefront, commerce (cart → checkout → payment → printer → delivery) and the
-admin's operations side are built and running locally. See [08-progress.md](./08-progress.md) for what is
+admin (operations and drop authoring) are built and running locally. See [08-progress.md](./08-progress.md) for what is
 real, what is verified, and what waits on outside credentials.

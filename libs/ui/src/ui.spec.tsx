@@ -1,9 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { accentProblems, accentVars, contrast, DropTheme } from './index.js';
-
-const VOID = '#08090B';
+import {
+  accentProblems,
+  accentVars,
+  contrast,
+  DropTheme,
+  SIGNAL,
+  VOID,
+} from './index.js';
 
 describe('palette contrast (docs/10)', () => {
   it('smoke clears AA on the void; the first-drafted grey did not', () => {
@@ -56,5 +61,13 @@ describe('token sheet', () => {
       expect(css).toMatch(new RegExp(`--${name}:\\s*#[0-9a-f]{6};`));
     }
     expect(css).toContain('--color-accent: var(--drop-accent)');
+  });
+});
+
+describe('shared colour constants', () => {
+  it('match the token sheet, so the publish check and the site agree', () => {
+    const css = readFileSync(join(import.meta.dirname, 'tokens.css'), 'utf8');
+    expect(css.toLowerCase()).toContain(`--void: ${VOID.toLowerCase()};`);
+    expect(css.toLowerCase()).toContain(`--signal: ${SIGNAL.toLowerCase()};`);
   });
 });
