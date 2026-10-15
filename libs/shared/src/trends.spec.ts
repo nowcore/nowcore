@@ -46,6 +46,20 @@ describe('isNoise', () => {
       'india v australia',
     ])
       expect(isNoise(q)).toBe(true);
+    // The same kinds of search in Indian languages and romanised Hindi.
+    for (const q of [
+      'ನಾಳೆಯ ಹವಾಮಾನ', // seen live: Kannada, "tomorrow's weather"
+      'आज का मौसम',
+      'మేష రాశి ఫలాలు',
+      'பொதுத் தேர்வு முடிவுகள்',
+      'kerala lottery sambad',
+      'aaj ka mausam',
+      'gold rate today',
+    ])
+      expect(isNoise(q)).toBe(true);
+    // Regional-language moments are not noise: they are what an India-first radar is for.
+    for (const q of ['കോക്രോച്ച് ജനതാ പാര്ട്ടി', 'ಆಧಾರ್'])
+      expect(isNoise(q)).toBe(false);
     for (const q of [
       'pm kisan yojana',
       'gemini 4 argon',

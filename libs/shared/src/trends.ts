@@ -54,11 +54,69 @@ const NOISE = [
   /\b(vs|v)\b/,
   /\bhoroscope\b|\bweather\b|\blottery\b|\bpanchang\b/,
   /\bholiday\b|\bbank (holiday|closed)\b/,
+  /\b(gold|silver|petrol|diesel) (rate|price)s?\b/,
+  // Romanised Hindi, as people type it into search.
+  /\b(mausam|rashifal|rashi bhavishya|sarkari result|lottery sambad)\b/,
+];
+
+/**
+ * The same kinds of search in Indian languages. Word boundaries (\b) do not
+ * work outside Latin script, so these match as substrings. Found 15 Oct 2026:
+ * "ನಾಳೆಯ ಹವಾಮಾನ" (Kannada, "tomorrow's weather") reached the radar.
+ */
+const NOISE_WORDS = [
+  // weather — Hindi, Marathi, Kannada, Telugu, Tamil, Malayalam, Bengali, Gujarati, Punjabi
+  'मौसम',
+  'हवामान',
+  'ಹವಾಮಾನ',
+  'వాతావరణం',
+  'வானிலை',
+  'കാലാവസ്ഥ',
+  'আবহাওয়া',
+  'હવામાન',
+  'ਮੌਸਮ',
+  // horoscope
+  'राशिफल',
+  'राशीभविष्य',
+  'ರಾಶಿ ಭವಿಷ್ಯ',
+  'రాశి ఫలాలు',
+  'ராசி பலன்',
+  'രാശിഫലം',
+  'রাশিফল',
+  'રાશિફળ',
+  'ਰਾਸ਼ੀਫਲ',
+  // exam results
+  'रिजल्ट',
+  'परिणाम',
+  'निकाल',
+  'ಫಲಿತಾಂಶ',
+  'ఫలితాలు',
+  'முடிவுகள்',
+  'ഫലം',
+  'ফলাফল',
+  'પરિણામ',
+  // gold rates
+  'सोने का भाव',
+  'सोन्याचा भाव',
+  'ಚಿನ್ನದ ದರ',
+  'బంగారం ధర',
+  'தங்கம் விலை',
+  'സ്വർണവില',
+  'সোনার দাম',
+  // lottery
+  'लॉटरी',
+  'ಲಾಟರಿ',
+  'లాటరీ',
+  'லாட்டரி',
+  'ലോട്ടറി',
+  'লটারি',
 ];
 
 export function isNoise(term: string): boolean {
   const t = term.toLowerCase();
-  return NOISE.some((re) => re.test(t));
+  return (
+    NOISE.some((re) => re.test(t)) || NOISE_WORDS.some((w) => term.includes(w))
+  );
 }
 
 /** Words that join anything to anything — they would corroborate every pair of sources. */
