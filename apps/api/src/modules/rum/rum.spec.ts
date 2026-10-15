@@ -3,6 +3,7 @@ import { AdminRum, Session } from '@nowcore/shared';
 import { createApp } from '../../create-app.js';
 import { readEnv } from '../../env.js';
 import { PrismaService } from '../../prisma.service.js';
+import { RUM_DAYS, ReconcileService } from '../orders/reconcile.service.js';
 
 /** Field performance (T-094): beacons in, a summary out. Routes unique to this run. */
 describe('rum', () => {
@@ -100,6 +101,25 @@ describe('rum', () => {
       (await send({ ...base, metrics: [{ name: 'LCP', value: 1e9 }] }))
         .statusCode,
     ).toBe(400);
+  });
+
+  it('forgets samples older than the privacy policy promises', async () => {
+    await send({
+      route,
+      tier: 'full',
+      mobile: false,
+      metrics: [{ name: 'TTFB', value: 100 }],
+    });
+    const old = await db.rumSample.findFirstOrThrow({
+      where: { route, metric: 'TTFB' },
+    });
+    await db.rumSample.update({
+      where: { id: old.id },
+      data: { createdAt: new Date(Date.now() - (RUM_DAYS + 1) * 86_400_000) },
+    });
+    await app.get(ReconcileService).run();
+    expect(await db.rumSample.findUnique({ where: { id: old.id } })).toBeNull();
+    expect(await db.rumSample.count({ where: { route } })).toBeGreaterThan(0);
   });
 
   it('summarises p75 per metric and segment, scroll as fps, for operators only', async () => {

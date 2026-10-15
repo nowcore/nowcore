@@ -18,7 +18,7 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase 4 — Admin             | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
 | **Phase 5 — Trend radar**   | ▓▓▓▓▓▓▓▓░░ 9 / 11 tasks · 2 🟡               |
 | Phase 6 — Accounts          | ░░░░░░░░░░ 0 / 6 tasks                       |
-| Phase 7 — Hardening         | ▓▓▓▓▓░░░░░ 5 / 11 tasks · 1 🟡               |
+| Phase 7 — Hardening         | ▓▓▓▓▓░░░░░ 5 / 11 tasks · 2 🟡               |
 
 **Next up:** Phase 6 — accounts (Supabase Auth, phone OTP or email; order history). It needs the hosted
 Supabase project (T-017). Until that exists, Phase 7 hardening items that are local — per-route body limits
@@ -35,7 +35,8 @@ numbers, not opinions.
   be written from memory.
 - **A Resend (or other) API key** and a sending domain → real buyer emails (T-062).
 - **A mid-tier Android phone** for the Phase 2 gate, measured on hardware.
-- **Privacy, terms, shipping/returns and COD policies** → T-097. The footer already links to them.
+- **The business details the policies name** → T-097: legal name, registered address, GSTIN, support email/phone,
+  grievance officer, court city — all in `apps/web/src/features/legal/business.ts`. Then a lawyer's read.
 - **A Reddit app (client id + secret) and a YouTube Data API key** → T-075 and T-078 against the real APIs.
   Without them the radar runs on HN and Google Trends only, which rarely overlap (US tech vs India searches).
 
@@ -46,6 +47,40 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-15 — Policies, decisions and flows · T-097 (drafts)
+
+**Policies (T-097, 🟡).** Five pages under `/legal/` — shipping & returns, cash on delivery, privacy, terms, contact &
+grievances — drafted from how Indian print-on-demand and D2C apparel stores do it, written to what the code
+actually does. The operator asked for drafts to edit later.
+
+- Costs come from `libs/shared` (₹999 free-shipping line, ₹80 shipping, ₹80 COD fee), so the policy cannot drift from
+  checkout. Holds, editions, COD eligibility and the late-payment rule match ADR-008 and the COD check.
+- Made-to-order defaults: no change-of-mind returns; free reprint or refund for misprints, damage, wrong size/colour,
+  reported within 7 days with photos; cancellation only until it goes to print.
+- Privacy follows the DPDP Act 2023: what is collected and why, processors named by role, retention (orders up to
+  8 years for tax, alerts until unsubscribe, performance data 90 days), rights, grievance officer. **The 90-day
+  claim was not true yet** — the reconciler now purges older `rum_samples` (test; failed with the purge removed).
+- Seller and grievance details are `[placeholders]` in one file; every page shows a "Draft" notice until none
+  remain. Footer: Shipping & returns, Contact, archive and wall links now go somewhere real; COD added.
+- Three claims were taken out because the system does not do them: a PIN-code check before payment, invoices
+  emailed with the order, and COD orders "confirmed by us" before acceptance.
+- Lighthouse on the new pages: 100 accessibility and SEO; they are in the sitemap.
+
+**`docs/decisions.md`** — every major decision in one place: product decisions by the operator, architecture (with
+the ADRs), drops and money, radar and measurement, security, design and accessibility — each with why and what was
+rejected. **`docs/flow.md`** — every flow file by file in call order (browse, cart, checkout and payment, fulfilment,
+drop authoring, the clock, waitlist, radar, admin sign-in, field performance, limits, SEO, legal) plus a
+"where to change…" map. `finish-task` now requires updating both; CLAUDE.md points to them.
+
+**Counts:** 10 projects, 150 tests (API 65). Two uncached full runs green on an awake, charged machine — which
+also confirms the render-test failure in the previous entry was the sleeping laptop, not the code.
+
+**Carried forward:** "Size guide" in the footer still points at the shop (no page yet; fit lives on product pages).
+The homepage says "printed the day you order it" while the shipping policy says 1–3 business days — align the copy
+with the SLA agreed with Printrove. Not legal advice: have the drafts read before launch.
 
 ---
 

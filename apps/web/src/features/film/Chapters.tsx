@@ -319,13 +319,14 @@ export function TheWall({ drop }: { drop: DropView }) {
 export function TakeIt({ drop }: { drop: DropView }) {
   const c = chapter(drop, 'take-it');
   const links = [
-    'Shop',
-    'The archive',
-    'Size guide',
-    'Shipping & returns',
-    'Wall of now',
-    'Contact',
-  ];
+    ['Shop', '/shop'],
+    ['The archive', '/#the-archive'],
+    // No size guide page yet: fit and measurements live on each product page.
+    ['Size guide', '/shop'],
+    ['Shipping & returns', '/legal/shipping'],
+    ['Wall of now', '/#the-wall'],
+    ['Contact', '/legal/contact'],
+  ] as const;
   return (
     <section
       id="take-it"
@@ -354,10 +355,10 @@ export function TakeIt({ drop }: { drop: DropView }) {
           aria-label="Footer"
           className="flex flex-wrap gap-x-11 gap-y-4 border-t border-steel/60 pt-7"
         >
-          {links.map((l) => (
+          {links.map(([l, href]) => (
             <a
               key={l}
-              href="/shop"
+              href={href}
               className="inline-flex items-center gap-2 text-sm text-paper-dim hover:text-paper"
             >
               {l}{' '}
@@ -375,6 +376,7 @@ export function TakeIt({ drop }: { drop: DropView }) {
             <a href="/legal/privacy">Privacy</a>
             <a href="/legal/terms">Terms</a>
             <a href="/legal/shipping">Shipping &amp; returns</a>
+            <a href="/legal/cod">COD</a>
           </span>
         </div>
       </div>

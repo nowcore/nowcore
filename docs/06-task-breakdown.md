@@ -267,7 +267,7 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 | T-094 | 🟡 Analytics + field RUM (p95 scroll fps from real devices)              | 0.5d | T-091 |
 | T-095 | Sentry across all four apps, PII scrubbed from breadcrumbs               | 0.4d | T-025 |
 | T-096 | ✅ Load test: a drop opening with 500 concurrent buyers                  | 0.8d | T-052 |
-| T-097 | Legal: privacy, terms, shipping/returns, COD policy                      | 0.5d | —     |
+| T-097 | 🟡 Legal: privacy, terms, shipping/returns, COD policy                   | 0.5d | —     |
 | T-098 | ✅ Runbook: provider outage, stuck order, failed drop open               | 0.5d | T-060 |
 | T-099 | Production deploy — Vercel + Railway/Fly, both Mumbai                    | 0.8d | T-091 |
 | T-100 | Dry-run drop end to end on production with real money                    | 0.3d | T-099 |

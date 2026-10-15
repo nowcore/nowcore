@@ -82,6 +82,8 @@ A trend-driven merch label. A trend is spotted, drawn, dropped, printed and ship
 India first — Printrove for print-on-demand, Razorpay for UPI/cards/COD. Zero inventory.
 
 Read [`docs/08-progress.md`](./docs/08-progress.md) first when picking up work. It says what is real.
+[`docs/decisions.md`](./docs/decisions.md) says why things are the way they are; [`docs/flow.md`](./docs/flow.md)
+says how a request moves through the files.
 
 ## The four things that must not drift
 

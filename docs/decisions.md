@@ -1,0 +1,93 @@
+# Decisions
+
+Every decision that shaped NOWCORE, newest last within each group, with **why** it was taken. Read this
+before changing anything structural — most "why is it like this?" questions are answered here.
+
+The big architectural ones also have a full ADR in [`adr/`](./adr/) (context, alternatives, consequences);
+this page is the index and the short form. Smaller decisions made while building are recorded here and in
+[`08-progress.md`](./08-progress.md) on the day they were made.
+
+**How to add one:** a row in the right table — what was decided, why, what was rejected, where it lives. If it
+needs more than three lines of reasoning, write an ADR and link it.
+
+---
+
+## 1. Product and brand — decided by the operator
+
+| When   | Decision                                                                             | Why                                                                                                                                                         |
+| ------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 13 Oct | **Name: NOWCORE**, tagline "wear the moment"                                         | Says what the label is — the "now" turned into a thing you wear — and works as a wordmark at every size.                                                    |
+| 13 Oct | **Print-on-demand, zero inventory**                                                  | A trend lives for days. Stock bought for a trend is stock left over; printing to order makes a 72-hour drop financially safe.                               |
+| 13 Oct | **India first**: Printrove (print), Razorpay (UPI/cards/COD)                         | UPI and COD are how India pays; local printing makes delivery days, not weeks. Global comes later through the POD port (ADR-001).                           |
+| 13 Oct | **Cinematic everywhere** (chosen over a "two-speed" site)                            | The brand is the experience. Paid for with three motion tiers and hard performance budgets so it stays fast on mid-tier Android (ADR-004).                  |
+| 13 Oct | **v1 = storefront + checkout + admin + trend radar + accounts**                      | The whole loop — spot, make, sell, ship — has to work before anything is polished.                                                                          |
+| 13 Oct | **Art direction "Archive of Now"**: void black, one accent per drop, editorial serif | Each drop re-tints the site with its own accent, so the site itself becomes the archive of moments.                                                         |
+| 13 Oct | **Database local for now**; hosted Supabase and GitHub remote later                  | Build without waiting on accounts; nothing is pushed until the remote exists.                                                                               |
+| 15 Oct | **Legal pages drafted from common Indian D2C/POD practice**, edited later            | So the footer links work and launch is not blocked on a lawyer's first draft. Business details are placeholders in one file (`features/legal/business.ts`). |
+
+## 2. Architecture
+
+| Decision                                                                                   | Why                                                                                                                         | Rejected                               | Where                    |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------ |
+| **Nx monorepo**: Next.js (web, admin) + NestJS/Fastify (api) + BullMQ worker + libs        | One repo, one type system; module boundaries stop the storefront importing payment or printer code.                         | Separate repos (contracts drift).      | docs/03, docs/04         |
+| **Fulfilment behind a `PodProvider` port**                                                 | Printrove today, Printful tomorrow, without touching orders. Nothing outside `libs/pod` knows a printer.                    | Calling Printrove from the order code. | ADR-001                  |
+| **Motion is a library with budgets** (`libs/motion`), three tiers: full / reduced / static | Cinematic everywhere only stays honest if every surface is measured and degrades. `prefers-reduced-motion` always wins.     | Animation written per page.            | ADR-002, docs/10         |
+| **Supabase + Prisma; the API is the only database writer**                                 | Authorisation in one testable place, not scattered across RLS policies.                                                     | Browser writes through Supabase RLS.   | ADR-003                  |
+| **The browser never calls the API**; Next server components and server actions do (BFF)    | No API URL or secret in the browser; one place for auth cookies, CORS stays closed.                                         | Public API called from client JS.      | apps/web `lib/api.ts`    |
+| **Zod at every boundary** — HTTP, webhooks, queue payloads, env, third-party responses     | A malformed input fails loudly at the edge instead of corrupting data inside.                                               | Trusting types at runtime.             | `libs/shared`            |
+| **Money is integer paise; no floats anywhere in the schema**                               | Floats lose paise. A schema test fails on any `Float`/`Decimal`, so measurements use integers too (RUM stores thousandths). | Decimal columns "only for money".      | `libs/db` schema.spec    |
+| **Order items snapshot title, SKU, size, colour, price**                                   | Catalogue prices and names change; what someone bought must not.                                                            | Joining to the live variant.           | docs/05                  |
+| **Every webhook is idempotent on the provider's event id**                                 | Razorpay and printers retry and double-fire; a duplicate must be a no-op.                                                   | Trusting single delivery.              | `webhook_events` table   |
+| **Every status change is a conditional update + an event row** (`libs/orders`)             | Two writers racing (verify vs webhook) cannot both move an order; history and status never disagree.                        | Read-then-write.                       | `libs/orders/index.ts`   |
+| **Operator sign-in in the API** (scrypt, hashed session tokens, httpOnly cookie)           | Admin auth works before Supabase Auth exists, and stays testable.                                                           | Waiting for Supabase Auth.             | ADR-005                  |
+| **Turntable frames served from an asset origin**, not the web build                        | A drop rendered after a deploy 404'd: Next serves only build-time files. Rendering must never require deploying.            | Writing frames into `public/`.         | ADR-006                  |
+| **Local fake payment provider and sandbox printer**                                        | The whole checkout and fulfilment loop runs before real credentials; both are refused in production by env validation.      | Blocking on credentials.               | `payments/fake.provider` |
+| **The Printrove adapter is not written from memory**                                       | A wrong guess at an API that prints garments costs real money; it waits for their docs.                                     | Writing it speculatively.              | docs/08 needs            |
+
+## 3. Drops and money
+
+| Decision                                                                                     | Why                                                                                                                                        | Where               |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| **One live drop at a time; a closed drop never reopens**                                     | Scarcity is the product. Enforced in the drop state machine and by an advisory lock on opening.                                            | `libs/shared/drop`  |
+| **The drop clock runs in the API**, every minute, through the same `open()` as "Open now"    | A scheduled drop can still be edited; only the API can re-run the publish check (it asks the printer). One code path, one check, one lock. | ADR-007             |
+| **Cart and checkout refuse a drop past `closesAt` even while it is LIVE**                    | The clock can be late; the close is a promise.                                                                                             | `isOpen()`          |
+| **Countdown corrects for a wrong phone clock** (server `Date` header)                        | A phone set an hour wrong would count down to the wrong moment; the page itself may be cached, so its render time is no use.               | `Countdown.tsx`     |
+| **Unpaid orders hold their pieces for 15 min; checkout is locked per drop**                  | The load test oversold 100 pieces by 400 — every buyer was checked before anyone paid.                                                     | ADR-008             |
+| **A payment after its hold lapsed is honoured and flagged**                                  | The money is real and nothing is in stock to run out of (POD); refusing would punish a slow payer. Flagged `overEdition` so it is visible. | ADR-008             |
+| **COD only after one delivered prepaid order; ₹80 fee**                                      | Indian COD refusals run 15–30%, and a printed garment cannot be resold.                                                                    | docs/11             |
+| **Reconciler every 5 min** re-checks unconfirmed payments and re-queues stranded paid orders | Webhooks get lost and Redis blips; nobody who paid should be stuck.                                                                        | `reconcile.service` |
+
+## 4. Waitlist, radar, measurement
+
+| Decision                                                                                   | Why                                                                                                                                            | Where                  |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **One subscription per email; a ledger row per (subscriber, drop) written before sending** | NULL drop ids let duplicates through; the ledger makes alerts at-most-once even when a job retries.                                            | `drop_alerts`          |
+| **Unsubscribe is a one-click POST, not a GET**                                             | Mail scanners open every link; a GET that unsubscribed would remove people who never asked.                                                    | `/unsubscribe`         |
+| **Waitlist join answers the same whether the email was known**                             | Otherwise the endpoint reveals who is subscribed.                                                                                              | `waitlist.controller`  |
+| **Radar clusters computed at read time; only decisions stored**                            | Few hundred trends a day; no stale cluster table to keep in sync.                                                                              | `libs/shared/trends`   |
+| **Two sources ≥ 50 inside 24 h** to reach the board; promote re-checks it                  | A single-source spike is usually one loud thread (the `new-drop` skill's rule).                                                                | `radar()`              |
+| **One log scale across sources; a noise filter from the live feed**                        | 400 HN points and 400 searches mean very different things; logins, prices and fixtures are not moments.                                        | `normalise`, `isNoise` |
+| **Reddit/YouTube scheduled only when credentials exist**                                   | No silent failing jobs; the radar works on HN + Google Trends meanwhile.                                                                       | `sources.ts`           |
+| **Field performance is anonymous by construction**                                         | The question is "is the film fast on real phones", not who owns them: route patterns only, coarse device hints, no IP or id; 90-day retention. | `features/rum`, `/rum` |
+
+## 5. Security and hardening
+
+| Decision                                                                      | Why                                                                                                                                 | Where                |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| **64 KB request bodies by default; 12 MB only for artwork**                   | Every public route accepting 12 MB was an easy way to tie up the server.                                                            | `limits.ts`          |
+| **Per-IP rate limits in Redis, failing open**                                 | Hold across instances; a Redis outage should cost limits, not sales.                                                                | `limits.ts`          |
+| **Web/admin forward the buyer's IP signed with `BFF_SECRET`**                 | All buyer traffic reaches the API from the Next server — without this, one limit would cover the whole store (10 orders/min total). | `lib/forwarded.ts`   |
+| **The API refuses to start if `limits.ts` names a route that does not exist** | Renaming a route must not silently drop its limit.                                                                                  | `create-app.ts`      |
+| **Order pages need a signed token**                                           | Order references are sequential; they must not be enumerable into someone's address.                                                | `libs/orders/token`  |
+| **Secrets refused in production at their local defaults**                     | A forgotten env var must stop the deploy, not run with a public secret.                                                             | `env.ts` superRefine |
+
+## 6. Design system and accessibility
+
+| Decision                                                                  | Why                                                                                                                                              | Where               |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| **No raw colour or easing outside `libs/ui`** (lint rule)                 | The brand is a system; a hex typed in a page is drift.                                                                                           | eslint, docs/10     |
+| **`--ghost` moved to `#7C8088`**                                          | It failed AA in 66 places at small sizes; one token change instead of 66 edits, held by a test.                                                  | `tokens.css`        |
+| **One accent focus ring for every keyboard focus**, unlayered             | Inputs carried `outline-none` and the waitlist field had no focus indicator at all.                                                              | `tokens.css`        |
+| **Skip link inside the shared header**, targeting just after it           | Seven chrome stops before content on every page; a target at `<main>` would land back in the nav.                                                | `Chrome.tsx`        |
+| **Share cards are typographic, in the drop's accent, with bundled Geist** | The turntable stills are AVIF (the card renderer cannot read them), and the default face has no ₹ — it was silently downloading one from Google. | `features/seo/card` |
+| **Per-page canonicals, no root canonical**                                | A root canonical makes every page claim to be the home page.                                                                                     | page metadata       |

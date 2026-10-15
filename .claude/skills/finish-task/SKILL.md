@@ -50,6 +50,8 @@ If a project's dependencies changed: `pnpm exec nx sync`, then `pnpm exec nx syn
 - `docs/07-setup.md` if a new command, env var or dependency is needed to run the thing.
 - `docs/04-hld.md` if the directory tree changed; `docs/05-lld.md` if a schema or endpoint changed;
   `docs/03-tech-stack.md` if a sketch in it is now real code.
+- `docs/flow.md` if the task adds or changes a flow — keep the file-by-file path true.
+- `docs/decisions.md` if a decision was taken along the way: a row with what, **why**, and what was rejected.
   A doc that contradicts the code is worse than no doc.
 
 ## 7. Commit

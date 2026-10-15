@@ -23,6 +23,9 @@ import { OrderStateService } from './order-state.service.js';
  * worker job with the fulfilment queue. Running on several API instances is
  * safe — markPaid is idempotent — merely wasteful.
  */
+/** How long field-performance samples are kept (apps/web /legal/privacy). */
+export const RUM_DAYS = 90;
+
 @Injectable()
 export class ReconcileService implements OnModuleInit, OnModuleDestroy {
   private readonly log = new Logger('reconcile');
@@ -95,6 +98,13 @@ export class ReconcileService implements OnModuleInit, OnModuleDestroy {
       this.log.warn(
         `re-enqueued ${stranded.length} paid order(s) for the printer`,
       );
+
+    // Anonymous performance data is kept 90 days — the privacy policy says so.
+    await this.db.rumSample.deleteMany({
+      where: {
+        createdAt: { lt: new Date(now.getTime() - RUM_DAYS * 86_400_000) },
+      },
+    });
     return fixed;
   }
 }
