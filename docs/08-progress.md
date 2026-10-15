@@ -50,6 +50,22 @@ tokens, the type pairing, the motion grammar and the three-tier degradation, bec
 
 ---
 
+## 2026-10-15 — First real drop drafted on Supabase; radar fix; hosting options
+
+- **DROP 001 "Medical Miracle"** authored in the hosted admin (`tools/supabase.sh run`, the operator signed in;
+  Claude filled the drop, film copy and print): Void black + Ash grey, ₹799, edition 150, accent `#7CFFCB`. The
+  print was re-drawn as vectors framed to its content (3600 × 4010 px, ~30 cm at 300 dpi) after the first version
+  rendered small; both colourways re-rendered into Supabase and the 194 superseded frames were deleted. **Draft
+  only** — 14 variants await Printrove ids.
+- **Radar noise in Indian languages**: weather, horoscope, results, gold rates and lottery in nine languages plus
+  romanised Hindi (a Kannada weather search had reached the hosted radar). Tested, watched failing.
+- **Hosting**: [13-hosting.md](./13-hosting.md). The database is in Mumbai, so the API must be in India; Render
+  and Railway have no India region and Fly's Mumbai is restricted. Recommended: one server in Bangalore/Mumbai
+  (all four apps + Redis, Docker Compose, Cloudflare in front). Waiting on the operator's choice.
+- The storefront still shows hard-coded trend and wall copy (`lib/placeholders.ts`) — replace before launch.
+
+---
+
 ## 2026-10-15 — The hosted Supabase project · T-017, T-035
 
 The operator created the project (Mumbai, `ap-south-1`) and filled `.env.supabase`, which Claude cannot read;

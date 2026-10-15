@@ -39,6 +39,7 @@ Read in order. Each builds on the last.
 | 10  | [Design system](./10-design-system.md)   | Tokens, type, motion grammar, performance budgets        | Draft  |
 | 11  | [Business model](./11-business-model.md) | Unit economics, pricing, COD policy, IP rules            | Draft  |
 | 12  | [Runbook](./12-runbook.md)               | Provider outage, stuck order, failed drop open           | Living |
+| 13  | [Hosting options](./13-hosting.md)       | Where to deploy, costs, the recommendation (pending)     | Draft  |
 | —   | [Decisions](./decisions.md)              | Every major decision and why, with links to the ADRs     | Living |
 | —   | [Flows](./flow.md)                       | How each flow moves through the code, file by file       | Living |
 
