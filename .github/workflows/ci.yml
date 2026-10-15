@@ -1,8 +1,10 @@
 name: CI
 
+# dev is where work lands; main is production and only moves by pull request
+# from dev (docs/07 §7). Both are checked on every push.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
 
 # A new push to a PR makes the in-flight run pointless.

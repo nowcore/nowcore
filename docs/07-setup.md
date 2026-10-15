@@ -105,7 +105,15 @@ and `ASSET_BASE_URL=$SUPABASE_URL/storage/v1/object/public` on the API. Producti
 **Every new table needs row-level security** — Supabase serves `public` tables to the publishable key.
 `apps/api/src/rls.spec.ts` fails until the migration enables it.
 
-## 5. Conventions
+## 4b. Branches and the remote
+
+`origin` is `https://nowcore@github.com/nowcore/nowcore.git`, authenticated with the **nowcore** account's
+token (classic, scopes `repo` + `workflow`) stored in the macOS keychain under the username in the URL — the
+same arrangement as `country_dairy`. This repo commits as `NOWCORE <343059833+nowcore@users.noreply.github.com>`
+(`git config --local`).
+
+- **`dev`** — where all work lands. Pushed freely; CI runs on every push.
+- **`main`** — production. Moves only by a pull request from `dev` with CI green. Deployments (T-099) build from it.
 
 - **ESM only.** No CommonJS anywhere.
 - **Zod at every boundary** — HTTP, webhook, queue payload, env.
