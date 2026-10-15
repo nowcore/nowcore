@@ -1,20 +1,18 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Inject, Logger } from '@nestjs/common';
 import type { Job } from 'bullmq';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import type { ObjectStore } from '@nowcore/storage';
 import { RenderJob } from '@nowcore/shared';
-import type { Env } from './env.js';
 import { PrismaService } from './prisma.service.js';
 import { type FrameStore } from './render/frame-store.js';
 import {
   renderColourway,
   type ColourwayResult,
 } from './render/render-colourway.js';
-import { WORKER_ENV } from './tokens.js';
 import { QUEUES } from './queues.js';
 
 export const FRAME_STORE = Symbol('FRAME_STORE');
+export const ARTWORK_STORE = Symbol('ARTWORK_STORE');
 
 /**
  * `render.turntable` (T-034, T-066). Its own queue so a backlog of renders can
@@ -32,14 +30,14 @@ export class RenderProcessor extends WorkerHost {
   constructor(
     @Inject(FRAME_STORE) private readonly store: FrameStore,
     private readonly db: PrismaService,
-    @Inject(WORKER_ENV) private readonly env: Env,
+    @Inject(ARTWORK_STORE) private readonly artwork: ObjectStore,
   ) {
     super();
   }
 
   async process(job: Job): Promise<ColourwayResult> {
     const j = RenderJob.parse(job.data);
-    const artwork = await readFile(join(this.env.STORAGE_DIR, j.artworkKey));
+    const artwork = await this.artwork.get(j.artworkKey);
     const colour = `${j.colourCode}-${j.rev}`;
     const result = await renderColourway(
       { drop: j.drop, colour, garmentHex: j.garmentHex, artwork },

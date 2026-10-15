@@ -1,11 +1,12 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import type { ObjectStore } from '@nowcore/storage';
 
 /**
- * Where rendered frames go. Production is Supabase Storage (T-035), which
- * needs the hosted project the operator will share; until then frames are
- * written to a directory the web app serves statically. Same keys either way,
- * so switching is a binding change, not a code change.
+ * Where rendered frames go: a local directory the API serves at /frames
+ * (dev and tests), or Supabase Storage via ObjectFrameStore (hosted, T-035).
+ * Same keys and the same returned paths either way, so switching is a binding
+ * change (STORAGE=supabase), not a code change.
  */
 export interface FrameStore {
   /** Writes `bytes` at `key` and returns the public URL path. */
@@ -43,3 +44,23 @@ export const frameKey = (
   `${drop}/${colour.toLowerCase()}/${set}/f${String(i).padStart(2, '0')}.avif`;
 export const stillKey = (drop: string, colour: string) =>
   `${drop}/${colour.toLowerCase()}/still.avif`;
+
+/**
+ * Frames in object storage (Supabase bucket "frames", public). The returned
+ * path is the same `/frames/<key>` the local store gives, so the database and
+ * the API's URL building do not change — only ASSET_BASE_URL points at the
+ * bucket's public URL instead of the API.
+ */
+export class ObjectFrameStore implements FrameStore {
+  constructor(private readonly store: ObjectStore) {}
+
+  async put(key: string, bytes: Buffer): Promise<string> {
+    const type = key.endsWith('.avif')
+      ? 'image/avif'
+      : key.endsWith('.png')
+        ? 'image/png'
+        : 'application/octet-stream';
+    await this.store.put(key, bytes, type);
+    return `/frames/${key}`;
+  }
+}

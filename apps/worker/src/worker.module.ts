@@ -8,8 +8,13 @@ import { NotifyProcessor } from './fulfilment/notify.processor.js';
 import { PodSubmitProcessor } from './fulfilment/pod-submit.processor.js';
 import { PrismaService } from './prisma.service.js';
 import { QUEUES } from './queues.js';
-import { LocalFrameStore } from './render/frame-store.js';
-import { FRAME_STORE, RenderProcessor } from './render.processor.js';
+import { LocalStore, SupabaseStore } from '@nowcore/storage';
+import { LocalFrameStore, ObjectFrameStore } from './render/frame-store.js';
+import {
+  ARTWORK_STORE,
+  FRAME_STORE,
+  RenderProcessor,
+} from './render.processor.js';
 import { SystemProcessor } from './system.processor.js';
 import { MAILER, POD_PROVIDER, TREND_FETCH, WORKER_ENV } from './tokens.js';
 import { TrendsProcessor } from './trends/trends.processor.js';
@@ -41,8 +46,31 @@ export class WorkerModule {
         NotifyProcessor,
         TrendsProcessor,
         { provide: TREND_FETCH, useValue: fetch },
-        // Local until the hosted Supabase project exists (T-035).
-        { provide: FRAME_STORE, useValue: new LocalFrameStore(env.FRAMES_DIR) },
+        // Disk locally; Supabase Storage when hosted (T-035).
+        {
+          provide: FRAME_STORE,
+          useValue:
+            env.STORAGE === 'supabase'
+              ? new ObjectFrameStore(
+                  new SupabaseStore(
+                    env.SUPABASE_URL as string,
+                    env.SUPABASE_SECRET_KEY as string,
+                    'frames',
+                  ),
+                )
+              : new LocalFrameStore(env.FRAMES_DIR),
+        },
+        {
+          provide: ARTWORK_STORE,
+          useValue:
+            env.STORAGE === 'supabase'
+              ? new SupabaseStore(
+                  env.SUPABASE_URL as string,
+                  env.SUPABASE_SECRET_KEY as string,
+                  'artwork',
+                )
+              : new LocalStore(env.STORAGE_DIR),
+        },
         // Printrove joins here when its adapter exists (T-059).
         {
           provide: POD_PROVIDER,

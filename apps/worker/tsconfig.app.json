@@ -22,6 +22,9 @@
     },
     {
       "path": "../../libs/db/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/storage/tsconfig.lib.json"
     }
   ],
   "exclude": ["src/**/*.spec.ts", "vitest.config.mts"]

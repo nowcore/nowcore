@@ -64,6 +64,7 @@
     "@nowcore/orders": "workspace:^",
     "@nowcore/pod": "workspace:^",
     "@nowcore/shared": "workspace:^",
+    "@nowcore/storage": "workspace:^",
     "@prisma/adapter-pg": "7.10.0",
     "bullmq": "^5",
     "fastify": "5.11.3",

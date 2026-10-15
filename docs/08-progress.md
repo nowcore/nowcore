@@ -12,7 +12,7 @@ person should pick up. Task IDs refer to [06-task-breakdown.md](./06-task-breakd
 | Phase                       | Progress                                     |
 | --------------------------- | -------------------------------------------- |
 | Phase 0 — Design and decide | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks · signed off 13 Oct |
-| Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 15 / 17 tasks · 2 🟡              |
+| Phase 1 — Foundation        | ▓▓▓▓▓▓▓▓▓░ 16 / 17 tasks · 1 🟡              |
 | Phase 2 — The film          | ▓▓▓▓▓▓▓▓▓░ 15 / 16 tasks · 3 🟡              |
 | Phase 3 — Commerce          | ▓▓▓▓▓▓▓▓▓░ 15 / 18 tasks · 2 🟡 · 1 blocked  |
 | Phase 4 — Admin             | ▓▓▓▓▓▓▓▓▓▓ 11 / 11 tasks                     |
@@ -47,6 +47,40 @@ changes stay local until the remote exists; nothing is pushed.
 **What "design signed off" is not:** it is not agreement that the mock looks nice. It is agreement on the
 tokens, the type pairing, the motion grammar and the three-tier degradation, because those become
 `libs/ui` and `libs/motion` and are expensive to change after Phase 2.
+
+---
+
+## 2026-10-15 — The hosted Supabase project · T-017, T-035
+
+The operator created the project (Mumbai, `ap-south-1`) and filled `.env.supabase`, which Claude cannot read;
+every check printed shapes and statuses, never a key or password.
+
+- **Database**: both poolers connect (Postgres 17). All 7 migrations applied over the session pooler. The
+  operator account was seeded from `SEED_ADMIN_*` with no demo drops (`SEED_CATALOGUE=off`; the seed now refuses a
+  default password on any non-local database). The built API, run against Supabase through the transaction pooler,
+  signed the operator in (201), refused a wrong password (401), and reported "no drops yet".
+- **Found and fixed before any data went in: the tables were public.** Supabase serves every `public` table to
+  the publishable key, which is public by design; `/rest/v1/orders` and `/rest/v1/operators` answered 200. A
+  migration turns row-level security on for every table, with no policies: the public key now gets `[]` even from
+  `_prisma_migrations`, which has 7 rows. The API (the tables' owner) is unaffected — all 66 API tests pass with
+  RLS on. `rls.spec.ts` fails if any table lacks it (watched failing).
+- **Storage (T-035)**: new `libs/storage` (`LocalStore`, `SupabaseStore` over the REST API with the secret key;
+  scope:server, so the storefront cannot import it). The API stores artwork and the worker reads it and writes
+  frames through it; `STORAGE=local|supabase`, production refuses local. Buckets by `tools/supabase-setup.mjs`:
+  `frames` public (AVIF/PNG, 2 MB), `artwork` private (PNG, 10 MB). **End to end on local data + Supabase
+  storage**: uploaded a print, the worker rendered 72 + 24 frames into the bucket; still and frames served 200
+  `image/avif`, `public, max-age=31536000, immutable`, CORS `*`; the print 400 publicly, 200 with the secret key;
+  nothing written to local disk. Test objects (98) and rows removed after.
+- **`tools/supabase.sh`** — `check`, `migrate`, `buckets`, `admin`. `.env.supabase.example` is committed.
+
+**Counts:** 11 projects, 154 tests (API 66, storage 3).
+
+**Carried forward:**
+
+- Supabase public objects send no `Timing-Allow-Origin`, so `motion-check` cannot size frames served from the
+  bucket (it reads 0 bytes) — measure frames against the local API, or put a CDN in front (T-099).
+- Buyer accounts (Phase 6) need the publishable key and an SMS provider for phone OTP.
+- The hosted database is empty: the first real drop is authored in the admin once the API is deployed (T-099).
 
 ---
 

@@ -174,6 +174,9 @@ importers:
       '@nowcore/shared':
         specifier: workspace:^
         version: link:../../libs/shared
+      '@nowcore/storage':
+        specifier: workspace:^
+        version: link:../../libs/storage
       '@prisma/adapter-pg':
         specifier: 7.10.0
         version: 7.10.0
@@ -263,6 +266,9 @@ importers:
       '@nowcore/shared':
         specifier: workspace:^
         version: link:../../libs/shared
+      '@nowcore/storage':
+        specifier: workspace:^
+        version: link:../../libs/storage
       '@prisma/adapter-pg':
         specifier: 7.10.0
         version: 7.10.0
@@ -359,6 +365,12 @@ importers:
       zod:
         specifier: 4.4.3
         version: 4.4.3
+
+  libs/storage:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
 
   libs/ui:
     dependencies:

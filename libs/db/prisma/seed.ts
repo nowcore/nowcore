@@ -15,6 +15,14 @@ const url =
   process.env['DATABASE_URL'] ??
   'postgresql://nowcore:nowcore@localhost:5433/nowcore';
 const db = new PrismaClient({ adapter: new PrismaPg(url) });
+/** SEED_CATALOGUE=off seeds only the operator — for a real database, where demo drops do not belong. */
+const catalogue = process.env['SEED_CATALOGUE'] !== 'off';
+/** Anything but the local Postgres is real: no default password there, ever. */
+const local = /@(localhost|127\.0\.0\.1):5433\//.test(url);
+if (!local && !process.env['ADMIN_PASSWORD'])
+  throw new Error(
+    'ADMIN_PASSWORD is required when seeding a non-local database',
+  );
 
 // Drop 013 only has the BLK turntable rendered (apps/worker seed-frames.ts).
 const COLOURWAYS = [
@@ -117,38 +125,40 @@ async function drop(input: {
 const now = Date.now();
 const HOUR = 3_600_000;
 
-await drop({
-  number: 14,
-  slug: 'mediocre-by-design',
-  title: 'Mediocre By Design',
-  accent: '#D7FF3E',
-  status: 'LIVE',
-  opensAt: new Date(now - 1 * HOUR),
-  closesAt: new Date(now + 71 * HOUR),
-  product: {
-    slug: 'mediocre-by-design-tee',
+if (catalogue) {
+  await drop({
+    number: 14,
+    slug: 'mediocre-by-design',
     title: 'Mediocre By Design',
-    description:
-      '200gsm combed cotton, bio-washed. Direct-to-film print that will not crack. Printed in India the day you order it.',
-  },
-  soldOut: ['XS', '2XL'],
-});
+    accent: '#D7FF3E',
+    status: 'LIVE',
+    opensAt: new Date(now - 1 * HOUR),
+    closesAt: new Date(now + 71 * HOUR),
+    product: {
+      slug: 'mediocre-by-design-tee',
+      title: 'Mediocre By Design',
+      description:
+        '200gsm combed cotton, bio-washed. Direct-to-film print that will not crack. Printed in India the day you order it.',
+    },
+    soldOut: ['XS', '2XL'],
+  });
 
-await drop({
-  number: 13,
-  slug: 'touch-grass-protocol',
-  title: 'Touch Grass Protocol',
-  accent: '#FF6B1A',
-  status: 'ARCHIVED',
-  opensAt: new Date(now - 18 * 24 * HOUR),
-  closesAt: new Date(now - 15 * 24 * HOUR),
-  product: {
-    slug: 'touch-grass-protocol-tee',
+  await drop({
+    number: 13,
+    slug: 'touch-grass-protocol',
     title: 'Touch Grass Protocol',
-    description: 'Archived. Never restocked.',
-  },
-  soldOut: SIZES,
-});
+    accent: '#FF6B1A',
+    status: 'ARCHIVED',
+    opensAt: new Date(now - 18 * 24 * HOUR),
+    closesAt: new Date(now - 15 * 24 * HOUR),
+    product: {
+      slug: 'touch-grass-protocol-tee',
+      title: 'Touch Grass Protocol',
+      description: 'Archived. Never restocked.',
+    },
+    soldOut: SIZES,
+  });
+}
 
 /*
  * The local operator. Created once and never overwritten, so a password

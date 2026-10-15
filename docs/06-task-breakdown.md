@@ -67,12 +67,12 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 ### E1.2 — Data (1.5d)
 
-| ID    | Task                                                                      | Est  | D:           |
-| ----- | ------------------------------------------------------------------------- | ---- | ------------ |
-| T-017 | 🟡 Supabase project (Mumbai) + local `supabase start` + `.env.example`    | 0.3d | T-012        |
-| T-018 | ✅ `libs/db` — Prisma schema from [05 §1](./05-lld.md), initial migration | 0.6d | T-017, T-016 |
-| T-019 | ✅ Seed script: one live drop, one archived, products, variants, SKUs     | 0.3d | T-018        |
-| T-020 | ✅ `infra/docker-compose.yml` — Postgres 16 + Redis 7 + `pnpm infra:up`   | 0.3d | T-012        |
+| ID    | Task                                                                                        | Est  | D:           |
+| ----- | ------------------------------------------------------------------------------------------- | ---- | ------------ |
+| T-017 | ✅ Supabase project (Mumbai) + `.env.supabase.example` (local dev stays on Docker Postgres) | 0.3d | T-012        |
+| T-018 | ✅ `libs/db` — Prisma schema from [05 §1](./05-lld.md), initial migration                   | 0.6d | T-017, T-016 |
+| T-019 | ✅ Seed script: one live drop, one archived, products, variants, SKUs                       | 0.3d | T-018        |
+| T-020 | ✅ `infra/docker-compose.yml` — Postgres 16 + Redis 7 + `pnpm infra:up`                     | 0.3d | T-012        |
 
 **done:** `pnpm infra:up && pnpm db:seed` yields a browsable database.
 
@@ -121,11 +121,11 @@ Multiply by ~1.4 for calendar time. IDs are stable and referenceable in commits 
 
 ### E2.2 — Turntable pipeline (2d)
 
-| ID    | Task                                                                                                                                                          | Est  | D:           |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------ |
-| T-034 | ✅ `render.turntable` worker job: artwork + blank → 72 AVIF frames + fallback                                                                                 | 1.2d | T-026, T-031 |
-| T-035 | 🟡 Frames through a `FrameStore` port; size budget asserted in the job ✅. Supabase Storage binding waits on the hosted project — local filesystem until then | 0.4d | T-034        |
-| T-036 | ✅ Mobile frame set (24 frames) for the reduced tier                                                                                                          | 0.4d | T-034        |
+| ID    | Task                                                                                                                                              | Est  | D:           |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------ |
+| T-034 | ✅ `render.turntable` worker job: artwork + blank → 72 AVIF frames + fallback                                                                     | 1.2d | T-026, T-031 |
+| T-035 | ✅ Frames and artwork through `libs/storage`: disk locally, Supabase Storage when `STORAGE=supabase` (buckets `frames` public, `artwork` private) | 0.4d | T-034        |
+| T-036 | ✅ Mobile frame set (24 frames) for the reduced tier                                                                                              | 0.4d | T-034        |
 
 **done:** one artwork upload yields a working turntable with no manual step. **This is the task that, if skipped, costs a day per drop forever.**
 

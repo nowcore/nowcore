@@ -75,6 +75,14 @@ const Env = z
     STORAGE_DIR: z
       .string()
       .default(new URL('../../../.storage', import.meta.url).pathname),
+    /**
+     * Where artwork is stored (T-035): `.storage/` on disk, or Supabase
+     * Storage (bucket "artwork", private). Production must use Supabase.
+     */
+    STORAGE: z.enum(['local', 'supabase']).default('local'),
+    SUPABASE_URL: z.url().optional(),
+    /** The secret (service-role) key. Server-side only. */
+    SUPABASE_SECRET_KEY: z.string().min(20).optional(),
     /** BullMQ key prefix — must match the worker's. Tests use their own (see the worker's env). */
     QUEUE_PREFIX: z
       .string()
@@ -119,12 +127,30 @@ const Env = z
           });
       }
     }
+    if (env.STORAGE === 'supabase') {
+      for (const key of ['SUPABASE_URL', 'SUPABASE_SECRET_KEY'] as const) {
+        if (!env[key])
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: 'required when STORAGE=supabase',
+          });
+      }
+    }
     if (env.NODE_ENV === 'production') {
       if (env.PAYMENTS === 'fake') {
         ctx.addIssue({
           code: 'custom',
           path: ['PAYMENTS'],
           message: 'the fake provider can never run in production',
+        });
+      }
+      if (env.STORAGE === 'local') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['STORAGE'],
+          message:
+            'production stores artwork in Supabase, not on a disk that redeploys wipe',
         });
       }
       if (env.POD === 'sandbox') {

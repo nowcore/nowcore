@@ -8,10 +8,9 @@ import {
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { randomBytes } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
 import type { Prisma } from '@nowcore/db';
 import type { PodProvider } from '@nowcore/pod';
+import type { ObjectStore } from '@nowcore/storage';
 import {
   accentProblems,
   BLANK_SIZES,
@@ -37,6 +36,7 @@ import { PrismaService } from '../../prisma.service.js';
 import { FulfilmentQueue } from '../fulfilment/fulfilment.queue.js';
 import { POD_PROVIDER } from '../fulfilment/pod.module.js';
 import { assetUrl } from '../assets/asset-url.js';
+import { ARTWORK_STORE } from './artwork-store.js';
 
 const CLAIMED = [
   'PAID',
@@ -89,6 +89,7 @@ export class AdminDropsService implements OnModuleDestroy {
     @Inject(POD_PROVIDER) private readonly pod: PodProvider,
     @Inject(ENV) private readonly env: Env,
     private readonly queue: FulfilmentQueue,
+    @Inject(ARTWORK_STORE) private readonly artwork: ObjectStore,
   ) {
     const u = new URL(env.REDIS_URL);
     this.render = new Queue(QUEUE.render, {
@@ -340,9 +341,7 @@ export class AdminDropsService implements OnModuleDestroy {
 
     const rev = randomBytes(5).toString('hex').slice(0, 8);
     const key = `artwork/${slug}/${rev}.png`;
-    const path = join(this.env.STORAGE_DIR, key);
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, bytes);
+    await this.artwork.put(key, bytes, 'image/png');
     await this.db.asset.create({
       data: {
         productId: product.id,

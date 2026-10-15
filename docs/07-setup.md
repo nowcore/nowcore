@@ -86,6 +86,25 @@ API_URL  REVALIDATE_SECRET  BFF_SECRET  SITE_URL   # server-only; admin needs AP
 The module boundary in [04 §4](./04-hld.md) makes importing a pod or payment package from `scope:web`
 a build failure, which is the structural half of the same rule.
 
+## 4a. The hosted Supabase project
+
+Development and every test run on the local Docker Postgres; the hosted project (Mumbai, `ap-south-1`) is
+the real database. Copy `.env.supabase.example` to `.env.supabase` (gitignored, unreadable to Claude) and
+fill it in, then:
+
+```bash
+tools/supabase.sh check      # connection, tables, row-level security, buckets — prints no secrets
+tools/supabase.sh migrate    # prisma migrate deploy over the session pooler
+tools/supabase.sh buckets    # storage buckets: frames (public), artwork (private)
+tools/supabase.sh admin      # the first operator, from SEED_ADMIN_* — no demo drops
+```
+
+To run the API and worker on Supabase Storage: `STORAGE=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
+and `ASSET_BASE_URL=$SUPABASE_URL/storage/v1/object/public` on the API. Production refuses `STORAGE=local`.
+
+**Every new table needs row-level security** — Supabase serves `public` tables to the publishable key.
+`apps/api/src/rls.spec.ts` fails until the migration enables it.
+
 ## 5. Conventions
 
 - **ESM only.** No CommonJS anywhere.

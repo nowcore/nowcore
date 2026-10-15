@@ -32,6 +32,9 @@
     },
     {
       "path": "./libs/orders"
+    },
+    {
+      "path": "./libs/storage"
     }
   ],
   "compilerOptions": {}

@@ -120,9 +120,11 @@ apps/admin/src/app/(dash)/drops/new/NewDropForm.tsx → drops/actions.ts createD
 
 Artwork → turntables:
   drops/[slug]/page.tsx → actions.ts uploadArtwork()          POST /admin/drops/:slug/artwork (12 MB limit)
-    → admin-drops.service.ts: checks PNG bytes and size → .storage/artwork/... → queue "render", one job per colourway
+    → admin-drops.service.ts: checks PNG bytes and size → ARTWORK_STORE (libs/storage: .storage/ or Supabase "artwork", private)
+      → queue "render", one job per colourway
   → apps/worker/src/render.processor.ts → render/render-colourway.ts (geometry, colour, turntable, artwork)
-    → render/frame-store.ts writes .storage/frames/<rev>/ → variants get sequenceUrl + mockupUrl
+    → render/frame-store.ts: LocalFrameStore (.storage/frames) or ObjectFrameStore (Supabase "frames", public)
+      → variants get /frames/<key> paths; the API prefixes ASSET_BASE_URL (the API locally, the bucket when hosted)
   drops/[slug]/RenderWatch.tsx refreshes the page until every colourway has frames
 
 Printer mapping:  actions.ts → PATCH /admin/variants/:sku → podVariantId

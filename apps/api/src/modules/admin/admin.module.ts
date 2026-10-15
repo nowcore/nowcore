@@ -6,6 +6,7 @@ import { AdminOrdersService } from './admin-orders.service.js';
 import { AdminRumService } from './admin-rum.service.js';
 import { AdminTrendsService } from './admin-trends.service.js';
 import { DropClockService } from './drop-clock.service.js';
+import { artworkStoreProvider } from './artwork-store.js';
 import { AuthService } from './auth.service.js';
 import { OperatorGuard } from './operator.guard.js';
 
@@ -19,6 +20,7 @@ import { OperatorGuard } from './operator.guard.js';
     DropClockService,
     AdminTrendsService,
     AdminRumService,
+    artworkStoreProvider,
   ],
 })
 export class AdminModule {}
